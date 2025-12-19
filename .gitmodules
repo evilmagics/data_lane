@@ -1,3 +1,6 @@
 [submodule "ui"]
 	path = ui
 	url = https://github.com/evilmagics/data_lane_ui.git
+[submodule "docs/spec"]
+	path = docs/spec
+	url = https://github.com/evilmagics/data_lane_spec.git
