@@ -23,6 +23,7 @@ type Server struct {
 	apiKeyService   *services.APIKeyService
 	settingsService *services.SettingsService
 	stationService  *services.StationService
+	processService  *services.ProcessService
 	taskRepo        ports.TaskRepository
 	scheduleRepo    ports.ScheduleRepository
 	queue           ports.QueueService
@@ -34,6 +35,7 @@ func NewServer(
 	apiKeyService *services.APIKeyService,
 	settingsService *services.SettingsService,
 	stationService *services.StationService,
+	processService *services.ProcessService,
 	taskRepo ports.TaskRepository,
 	scheduleRepo ports.ScheduleRepository,
 	queue ports.QueueService,
@@ -53,6 +55,7 @@ func NewServer(
 		apiKeyService:   apiKeyService,
 		settingsService: settingsService,
 		stationService:  stationService,
+		processService:  processService,
 		taskRepo:        taskRepo,
 		scheduleRepo:    scheduleRepo,
 		queue:           queue,
@@ -128,6 +131,11 @@ func (s *Server) SetupRoutes() {
 	// SSE Global (Admin)
 	admin.Get("/sse/events", sseHandler.GlobalEvents)
 
+	// Service Control (Admin)
+	serviceHandler := handlers.NewServiceHandler(s.processService)
+	admin.Get("/system/services/pdf-generator/status", serviceHandler.GetStatus)
+	admin.Post("/system/services/pdf-generator/control", serviceHandler.Control)
+
 	// Static Assets (Embedded UI)
 	assetFS := assets.GetEmbeddedAssets()
 
@@ -181,6 +189,11 @@ func (s *Server) Start(addr string) error {
 	// Start queue workers
 	if s.queue != nil {
 		s.queue.Start(context.Background())
+	}
+
+	// Start service monitoring
+	if s.processService != nil {
+		s.processService.StartMonitoring(context.Background())
 	}
 
 	return s.app.Listen(addr)

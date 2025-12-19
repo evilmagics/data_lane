@@ -88,7 +88,7 @@ You MUST:
   * DO NOT use MCP tools; edit the file content directly.
   * **PROHIBITED:** Do NOT update, replace, or overwrite the entire collection object (JSON). 
 * **All API changes MUST be applied to Postman Collection ID:**
-  `09a36adf-d3ad-41e4-a127-8d85e99691a4`
+  `bfdcfbe0-0ec2-4661-b332-25795feecb38`
 * Explicitly specify in your response:
   * Collection ID
   * Folder name
@@ -149,7 +149,7 @@ You MUST respond using the following structure without exception:
 
 ## 🔌 API (Postman Local)
 - File Path:
-- Collection ID: 09a36adf-d3ad-41e4-a127-8d85e99691a4
+- Collection ID: bfdcfbe0-0ec2-4661-b332-25795feecb38
 - Endpoint:
 - Method:
 - Request Name (Updated/Created):

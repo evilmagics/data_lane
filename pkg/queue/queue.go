@@ -77,11 +77,14 @@ func NewQueue(db *gorm.DB, taskRepo ports.TaskRepository, settingsRepo ports.Set
 		settingsRepo: settingsRepo,
 	}
 
+	return q, nil
+}
+
+// RegisterConsumers registers the task handlers for the queue consumers
+func (q *Queue) RegisterConsumers() {
 	// Register task handler
 	pdfQueue := backlite.NewQueue(q.handlePDFTask)
-	client.Register(pdfQueue)
-
-	return q, nil
+	q.client.Register(pdfQueue)
 }
 
 // Enqueue adds a task to the queue

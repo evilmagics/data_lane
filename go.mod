@@ -35,6 +35,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/johnfercher/go-tree v1.0.5 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
+	github.com/kardianos/service v1.2.4 // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

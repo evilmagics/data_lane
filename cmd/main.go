@@ -56,6 +56,7 @@ func main() {
 	apiKeyService := services.NewAPIKeyService(apiKeyRepo)
 	settingsService := services.NewSettingsService(settingsRepo)
 	stationService := services.NewStationService(stationRepo)
+	processService := services.NewProcessService(settingsService)
 
 	// Initialize Queue
 	taskQueue, err := queue.NewQueue(db, taskRepo, settingsRepo)
@@ -69,6 +70,7 @@ func main() {
 		apiKeyService,
 		settingsService,
 		stationService,
+		processService,
 		taskRepo,
 		scheduleRepo,
 		taskQueue,
