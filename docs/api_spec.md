@@ -566,7 +566,7 @@ The embedded UI requires `/config.js` to be loaded to provision runtime configur
 ## Postman Collection
 A Postman collection is available for this API.
 
-**Collection ID**: `5851eb99-ce75-4587-a2ae-ef0f9053fc04`  
+**Collection ID**: `bfdcfbe0-0ec2-4661-b332-25795feecb38`  
 **Local Backup**: `docs/postman/DataLane_Collection.json`
 
 The collection is kept in sync with this specification via the MCP Postman Server.
