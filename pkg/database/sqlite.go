@@ -44,6 +44,7 @@ func InitDB(dbPath string) error {
 	}
 
 	DB.Exec("PRAGMA journal_mode=WAL;")
+	DB.Exec("PRAGMA busy_timeout=5000;")
 	DB.Exec("PRAGMA synchronous=NORMAL;")
 
 	// Connection pool settings

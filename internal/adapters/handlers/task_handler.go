@@ -180,7 +180,7 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 			// For now, let's log error and return 500.
 			task.Status = domain.TaskStatusFailed
 			h.taskRepo.Update(c.Context(), task)
-			return api.Error(c, api.CodeInternalError, "Failed to enqueue task")
+			return api.Error(c, api.CodeInternalError, "Failed to enqueue task: "+err.Error())
 		}
 	}
 
