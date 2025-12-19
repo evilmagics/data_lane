@@ -66,6 +66,11 @@ func NewQueue(db *gorm.DB, taskRepo ports.TaskRepository, settingsRepo ports.Set
 		return nil, err
 	}
 
+	// Ensure queue tables exist
+	if err := client.Install(); err != nil {
+		return nil, err
+	}
+
 	q := &Queue{
 		client:       client,
 		taskRepo:     taskRepo,

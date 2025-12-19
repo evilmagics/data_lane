@@ -18,7 +18,7 @@ The PDF Generator uses a persistent task queue to handle PDF generation jobs asy
 
 ## Queue Configuration
 *   **Concurrency**: Controlled by the `queue_concurrency` setting (default: 1).
-*   **Persistence**: Tasks are stored in the application database (`d:\Projects\intracs\pdf_generator\app.db` by default).
+*   **Persistence**: Tasks are stored in the application database (`d:\Projects\intracs\pdf_generator\app.db` by default). Queue tables are automatically created/updated on startup.
 *   **Retries**: Configured to retry 3 times with exponential backoff.
 *   **Database Locking**: SQLite WAL mode is enabled with a 5-second busy timeout to handle concurrent access between the API and background workers.
 
