@@ -1,0 +1,35 @@
+# User specific excludes
+sample/
+build/
+output/
+logs/
+internal/assets/dist/
+
+# Internal application database
+data/
+
+# Logs
+*.log
+
+# Go Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Project specific generated files
+*.pdf
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Env files
+.env
+!.env.example
