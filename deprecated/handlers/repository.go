@@ -8,21 +8,21 @@ import (
 	"pdf_generator/deprecated/models"
 	"time"
 
-	_ "github.com/alexbrainman/odbc"
+	_ "github.com/mattn/go-adodb"
 
 	"github.com/rs/zerolog/log"
 )
 
 // OpenConnection opens a connection to an Access database using an ODBC connection string (DSN)
-// Example DSN: `Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=C:\path\to\db.accdb;`
+// Example DSN: `Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\path\to\db.accdb;`
 // Note: Access is file-based. Keep MaxOpenConns small (1) to reduce file locking issues.
 func OpenConnection(ctx context.Context, dsn string, maxOpenConns int, maxIdleConns int, connMaxLifetime time.Duration) (*Repository, error) {
-	// If dsn contains just the file path, wrap it in ODBC driver string
+	// If dsn contains just the file path, wrap it in ADODB provider string
 	if !containsDriver(dsn) {
-		dsn = fmt.Sprintf("DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=%s;", dsn)
+		dsn = fmt.Sprintf("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=%s;", dsn)
 	}
 
-	db, err := sql.Open("odbc", dsn)
+	db, err := sql.Open("adodb", dsn)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to open odbc connection")
 		return nil, fmt.Errorf("failed to open odbc connection: %w", err)
