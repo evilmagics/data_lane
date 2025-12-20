@@ -106,8 +106,8 @@ func GetDataSourcePath(rootFolder string, transactionTime time.Time, stationID s
 	day := transactionTime.Format("02")
 	yearFull := transactionTime.Format("2006")
 
-	// Create folder name: MMYYYY (e.g., 122024)
-	folderName := monthShort + yearFull
+	// Create folder name: MM-YYYY (e.g., 12-2024)
+	folderName := fmt.Sprintf("%s-%s", monthShort, yearFull)
 
 	// Create filename: DDMMYYYY.mdb (e.g., 20122024.mdb)
 	fileName := fmt.Sprintf("%s%s%s.mdb", day, monthShort, yearFull)
