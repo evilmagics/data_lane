@@ -52,6 +52,14 @@ func (p *program) run() {
 	ex, err := os.Executable()
 	if err == nil {
 		exPath := filepath.Dir(ex)
+		// CRITICAL: Change CWD to the executable directory
+		// when running as a service, CWD is often C:\Windows\system32
+		if err := os.Chdir(exPath); err != nil {
+			log.Error().Err(err).Msg("Failed to change working directory to executable path")
+		} else {
+            log.Info().Str("path", exPath).Msg("Changed working directory")
+        }
+
 		if _, err := os.Stat(filepath.Join(exPath, ".env")); err == nil {
 			envPath = filepath.Join(exPath, ".env")
 		}
