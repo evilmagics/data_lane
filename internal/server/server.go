@@ -187,11 +187,6 @@ func (s *Server) Start(addr string) error {
 		return err
 	}
 
-	// Start queue workers
-	// if s.queue != nil {
-	// 	s.queue.Start(context.Background())
-	// }
-
 	// Start service monitoring
 	if s.processService != nil {
 		// Auto-start worker service

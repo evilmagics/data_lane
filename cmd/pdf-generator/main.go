@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -27,7 +26,7 @@ type program struct {
 
 func (p *program) Start(s service.Service) error {
 	p.exit = make(chan struct{})
-	
+
 	// Start should not block. Do the actual work async.
 	go p.run()
 	return nil
@@ -42,39 +41,19 @@ func (p *program) Stop(s service.Service) error {
 
 func (p *program) run() {
 	log.Info().Msg("Service started")
-	
-	// Load environment variables
-	envPath := ".env"
-	// adjust path if running as service in different dir?
-	// Usually service runs with CWD as executable dir or system dir.
-	// Best to try loading from executable directory
-	ex, err := os.Executable()
-	if err == nil {
-		exPath := filepath.Dir(ex)
-		// CRITICAL: Change CWD to the executable directory
-		// when running as a service, CWD is often C:\Windows\system32
-		if err := os.Chdir(exPath); err != nil {
-			log.Error().Err(err).Msg("Failed to change working directory to executable path")
-		} else {
-            log.Info().Str("path", exPath).Msg("Changed working directory")
-        }
 
-		if _, err := os.Stat(filepath.Join(exPath, ".env")); err == nil {
-			envPath = filepath.Join(exPath, ".env")
-		}
-	}
-	
 	// Try loading env, but don't fail if not found (might use system envs)
-	_ = godotenv.Load(envPath)
+	_ = godotenv.Load()
 
 	// Initialize Logger
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
-	
+
 	// Initialize Database
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "data/app.db"
 	}
+	log.Info().Str("db_path", dbPath).Msg("Using database path")
 	// Also ensure data dir exists if path contains directory separator?
 	// InitDB handles opening, but maybe ensure directory?
 	// InitDB likely handles it or sqlite driver errors.
