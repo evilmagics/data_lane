@@ -57,7 +57,7 @@ func NewQueue(db *gorm.DB, taskRepo ports.TaskRepository, settingsRepo ports.Set
 
 	client, err := backlite.NewClient(backlite.ClientConfig{
 		DB:              sqlDB,
-		Logger:          nil, // Use default or wrap access logger?
+		Logger:          &BackliteLogger{},
 		NumWorkers:      concurrency,
 		ReleaseAfter:    30 * time.Minute,
 		CleanupInterval: 1 * time.Hour,
