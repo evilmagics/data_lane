@@ -15,7 +15,7 @@ func (s *ProcessService) StartMonitoring(ctx context.Context) {
 	go func() {
 		// Initial check
 		s.checkAndUpdateStatus()
-		
+
 		// Load interval from settings or default 10s
 		// For simplicity, we use 10s here, but ideally should watch settings?
 		// Or refresh inside the loop.
@@ -39,11 +39,11 @@ func (s *ProcessService) checkAndUpdateStatus() {
 
 	status, err := s.getStatusDirect(ctx)
 	if err != nil {
+		// Only log warn if it's not a common/expected state during setup
 		log.Warn().Err(err).Msg("Failed to check service status during monitoring")
-		// Keep previous status or set to unknown?
-		// Maybe set to unknown if error persists?
-		// For now, let's just log.
-		return 
+		// Use unknown if we really failed
+		s.cachedStatus.Store(domain.ServiceStatusUnknown)
+		return
 	}
 	s.cachedStatus.Store(status)
 }
@@ -59,22 +59,22 @@ func (s *ProcessService) GetStatus(ctx context.Context) (domain.ServiceStatus, e
 
 // getStatusDirect queries the system service manager directly
 func (s *ProcessService) getStatusDirect(ctx context.Context) (domain.ServiceStatus, error) {
-    svc, err := s.getService()
-    if err != nil {
-        return domain.ServiceStatusUnknown, err
-    }
-    
-    status, err := svc.Status()
-    if err != nil {
-        return domain.ServiceStatusUnknown, err
-    }
-    
-    switch status {
-    case service.StatusRunning:
-        return domain.ServiceStatusRunning, nil
-    case service.StatusStopped:
-        return domain.ServiceStatusStopped, nil
-    default:
-        return domain.ServiceStatusUnknown, nil
-    }
+	svc, err := s.getService()
+	if err != nil {
+		return domain.ServiceStatusUnknown, err
+	}
+
+	status, err := svc.Status()
+	if err != nil {
+		return domain.ServiceStatusUnknown, err
+	}
+
+	switch status {
+	case service.StatusRunning:
+		return domain.ServiceStatusRunning, nil
+	case service.StatusStopped:
+		return domain.ServiceStatusStopped, nil
+	default:
+		return domain.ServiceStatusUnknown, nil
+	}
 }
