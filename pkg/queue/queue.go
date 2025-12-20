@@ -99,6 +99,21 @@ func (q *Queue) Enqueue(ctx context.Context, taskID string, metadata domain.Task
 // Start starts the queue workers
 func (q *Queue) Start(ctx context.Context) {
 	q.client.Start(ctx)
+
+	// Periodically notify to ensure frequent polling (every 1s)
+	// This forces the workers to check for new tasks even if idle
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				q.client.Notify()
+			}
+		}
+	}()
 }
 
 // handlePDFTask processes a PDF generation task
