@@ -97,3 +97,28 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 
 	return transactions, nil
 }
+
+// GetDataSourcePath constructs the path to the Access database file
+// Format: {root}/{month_2_digit}{year_2_digit}/{station_id_2_digit}/{day_2_digit}{month_2_digit}{year_4_digit}.mdb
+func GetDataSourcePath(rootFolder string, transactionTime time.Time, stationID string) string {
+	// Format time components
+	monthShort := transactionTime.Format("01")
+	yearShort := transactionTime.Format("06")
+	day := transactionTime.Format("02")
+	yearFull := transactionTime.Format("2006")
+	
+	// Create folder name: MMYY (e.g., 1224)
+	folderName := monthShort + yearShort
+	
+	// Create filename: DDMMYYYY.mdb (e.g., 20122024.mdb)
+	fileName := fmt.Sprintf("%s%s%s.mdb", day, monthShort, yearFull)
+
+	// Ensure station ID is 2 digits (e.g., "1" -> "01", "01" -> "01")
+	// If stationID is not numeric, use as is (though user specified 2 digit ID)
+	cleanStationID := stationID
+	if len(cleanStationID) == 1 {
+		cleanStationID = "0" + cleanStationID
+	}
+	
+	return fmt.Sprintf("%s/%s/%s/%s", rootFolder, folderName, cleanStationID, fileName)
+}

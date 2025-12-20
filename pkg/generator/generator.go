@@ -51,7 +51,24 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 	}
 
 	// Connect to Access database
-	dbPath := filepath.Join(metadata.RootFolder, "data.mdb") // Adjust as needed
+	var targetDate time.Time
+	var err error
+
+	if metadata.Filter.Date != "" {
+		targetDate, err = time.Parse("2006-01-02", metadata.Filter.Date)
+	} else if metadata.Filter.RangeStart != "" {
+		targetDate, err = time.Parse("2006-01-02", metadata.Filter.RangeStart)
+	} else {
+		targetDate = time.Now()
+	}
+
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to parse date for data source path, using current time")
+		targetDate = time.Now()
+	}
+
+	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.StationID))
+	dbPath = filepath.FromSlash(dbPath) // Ensure correct separators for Windows
 	transactions, err := datasource.LoadTransactions(ctx, dbPath, metadata.Filter)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load transactions")
