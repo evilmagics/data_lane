@@ -66,6 +66,9 @@ func (s *ProcessService) getStatusDirect(ctx context.Context) (domain.ServiceSta
 
 	status, err := svc.Status()
 	if err != nil {
+		if err.Error() == "the service is not installed" {
+			return domain.ServiceStatusNotInstalled, nil
+		}
 		return domain.ServiceStatusUnknown, err
 	}
 
