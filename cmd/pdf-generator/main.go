@@ -14,7 +14,6 @@ import (
 	"gorm.io/gorm"
 
 	"pdf_generator/internal/adapters/repository"
-	"pdf_generator/pkg/config"
 	"pdf_generator/pkg/database"
 	"pdf_generator/pkg/queue"
 )
@@ -71,14 +70,16 @@ func (p *program) run() {
 	// Initialize Logger
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 	
-	// Load Config
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to load config, using defaults")
-	}
-
 	// Initialize Database
-	if err := database.InitDB(cfg.Database.Path); err != nil {
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "data/app.db"
+	}
+	// Also ensure data dir exists if path contains directory separator?
+	// InitDB handles opening, but maybe ensure directory?
+	// InitDB likely handles it or sqlite driver errors.
+
+	if err := database.InitDB(dbPath); err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect to database")
 		return
 	}

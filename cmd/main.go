@@ -2,6 +2,8 @@ package main
 
 import (
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
@@ -9,7 +11,6 @@ import (
 	"pdf_generator/internal/adapters/repository"
 	"pdf_generator/internal/core/services"
 	"pdf_generator/internal/server"
-	"pdf_generator/pkg/config"
 	"pdf_generator/pkg/database"
 	"pdf_generator/pkg/logger"
 	"pdf_generator/pkg/queue"
@@ -29,14 +30,12 @@ func main() {
 
 	log.Info().Msg("Starting PDF Generator Application")
 
-	// Load Configuration
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to load configuration, using defaults")
-	}
-
 	// Initialize database
-	if err := database.InitDB(cfg.Database.Path); err != nil {
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "data/app.db"
+	}
+	if err := database.InitDB(dbPath); err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
 	}
 	log.Info().Msg("Database initialized")
@@ -51,8 +50,18 @@ func main() {
 	apiKeyRepo := repository.NewAPIKeyRepository(db)
 	stationRepo := repository.NewStationRepository(db)
 
+	// Dependency injection
+	sessionExpiry := 12 * time.Hour
+	if envExp := os.Getenv("SESSION_EXPIRY"); envExp != "" {
+		if dur, err := time.ParseDuration(envExp); err == nil {
+			sessionExpiry = dur
+		} else if val, err := strconv.Atoi(envExp); err == nil {
+			sessionExpiry = time.Duration(val) * time.Hour
+		}
+	}
+
 	// Initialize services
-	authService := services.NewAuthService(sessionRepo, settingsRepo, cfg.Session.Expiry)
+	authService := services.NewAuthService(sessionRepo, settingsRepo, sessionExpiry)
 	apiKeyService := services.NewAPIKeyService(apiKeyRepo)
 	settingsService := services.NewSettingsService(settingsRepo)
 	stationService := services.NewStationService(stationRepo)
