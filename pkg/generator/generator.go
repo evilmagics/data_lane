@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -11,13 +12,17 @@ import (
 
 	maroto "github.com/johnfercher/maroto/v2"
 	"github.com/johnfercher/maroto/v2/pkg/components/col"
+	"github.com/johnfercher/maroto/v2/pkg/components/image"
 	"github.com/johnfercher/maroto/v2/pkg/components/row"
 	"github.com/johnfercher/maroto/v2/pkg/components/text"
 	"github.com/johnfercher/maroto/v2/pkg/config"
 	"github.com/johnfercher/maroto/v2/pkg/consts/align"
+	"github.com/johnfercher/maroto/v2/pkg/consts/border"
+	"github.com/johnfercher/maroto/v2/pkg/consts/extension"
 	"github.com/johnfercher/maroto/v2/pkg/consts/fontstyle"
 	"github.com/johnfercher/maroto/v2/pkg/consts/pagesize"
 	"github.com/johnfercher/maroto/v2/pkg/props"
+	"github.com/johnfercher/maroto/v2/pkg/repository"
 	"github.com/rs/zerolog/log"
 
 	"pdf_generator/internal/core/domain"
@@ -35,7 +40,7 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 		branchName = name
 	}
 
-	company := getSettingOrDefault(ctx, settingsRepo, domain.SettingManagementCompany, "")
+	company := getSettingOrDefault(ctx, settingsRepo, domain.SettingManagementCompany, "PT JASA MARGA TBK")
 	if c, ok := metadata.Settings["management_company"]; ok && c != "" {
 		company = c
 	}
@@ -72,50 +77,137 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 	transactions, err := datasource.LoadTransactions(ctx, dbPath, metadata.Filter)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load transactions")
+		// Fail gracefully? Or return error.
 		return "", 0, err
 	}
 
 	log.Info().Int("count", len(transactions)).Msg("Loaded transactions")
 
-	// Create PDF
+	// Load Fonts
+	fontName := "nunito-sans"
+	fontPath := "./assets/fonts/nunito-sans"
+
+	fonts, err := repository.New().
+		AddUTF8Font(fontName, fontstyle.Normal, path.Join(fontPath, "nunito-sans.regular.ttf")).
+		AddUTF8Font(fontName, fontstyle.Italic, path.Join(fontPath, "nunito-sans.italic.ttf")).
+		AddUTF8Font(fontName, fontstyle.Bold, path.Join(fontPath, "nunito-sans.bold.ttf")).
+		AddUTF8Font(fontName, fontstyle.BoldItalic, path.Join(fontPath, "nunito-sans.bold-italic.ttf")).
+		Load()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to load fonts")
+	}
+
+	// Create PDF Config
 	cfg := config.NewBuilder().
 		WithPageSize(getPageSize(pageSize)).
-		WithTopMargin(10).
-		WithBottomMargin(10).
-		WithLeftMargin(10).
-		WithRightMargin(10).
+		WithTopMargin(5).
+		WithBottomMargin(5).
+		WithLeftMargin(5).
+		WithRightMargin(5).
+		WithMaxGridSize(22).
+		WithCompression(true).
+		WithCustomFonts(fonts).
+		WithDefaultFont(&props.Font{Family: fontName}).
+		WithSequentialLowMemoryMode(5).
 		Build()
 
 	m := maroto.New(cfg)
 
-	// Header
-	m.AddRows(
-		row.New(10).Add(
-			col.New(12).Add(
-				text.New(company, props.Text{Size: 14, Style: fontstyle.Bold, Align: align.Center}),
-			),
+	// Header Logic adapted from deprecated
+	headerTextStyle := props.Text{Size: 11, Style: fontstyle.Bold, Align: align.Left, Top: 1}
+
+	// Determine station name for header if available, otherwise just use ID
+	stationLabel := fmt.Sprintf("GERBANG : %d", metadata.StationID)
+	// Try to find a station name from the first transaction if available
+	if len(transactions) > 0 {
+		st := transactions[0].GetStation()
+		if st != "" && st != "--" {
+			stationLabel = fmt.Sprintf("GERBANG : %s", st)
+		}
+	}
+
+	dateStr := time.Now().Format("02/01/2006 15:04:05")
+
+	m.RegisterHeader(
+		row.New().Add(
+			col.New(16).Add(text.New(company, headerTextStyle)),
+			col.New(6).Add(text.New(dateStr,
+				props.Text{Size: 10, Style: fontstyle.Normal, Align: align.Left, Top: 1, Bottom: 2},
+			)),
 		),
-		row.New(8).Add(
-			col.New(12).Add(
-				text.New(fmt.Sprintf("Branch: %s", branchName), props.Text{Size: 11, Align: align.Center}),
-			),
+		row.New().Add(
+			col.New(16).Add(text.New(fmt.Sprintf("CABANG : %s", branchName), headerTextStyle)),
+			col.New(6).Add(text.New("Kabang Tol/Analis",
+				props.Text{Size: 10, Style: fontstyle.Normal, Align: align.Left, Top: 0, Bottom: 4},
+			)),
 		),
-		row.New(6).Add(
-			col.New(12).Add(
-				text.New(fmt.Sprintf("Date: %s", metadata.Filter.Date), props.Text{Size: 10, Align: align.Center}),
-			),
+		row.New().Add(
+			col.New(16).Add(text.New(stationLabel, headerTextStyle)),
+			col.New(6).Add(text.New("AWM", // Removed [XXX01] to be generic
+				props.Text{Size: 10, Style: fontstyle.Normal, Align: align.Left, Top: 2, Bottom: 3},
+			)),
 		),
 	)
 
-	// Table of transactions (simplified)
-	for _, tx := range transactions {
+	// Body Logic (Transactions)
+	textSpace := 4.5
+	bodyCheckTextStyle := props.Text{Size: 8, Style: fontstyle.Bold, Top: 1}
+	valueTextStyle := props.Text{Size: 8, Style: fontstyle.Normal, Top: 1}
+	imageStyle := props.Rect{Center: true, Percent: 95, Top: 0}
+	borderStyle := &props.Cell{
+		BorderType:      border.Top,
+		BorderColor:     &props.Color{Red: 33, Green: 37, Blue: 41},
+		BorderThickness: 0.42,
+	}
+
+	for _, t := range transactions {
+		firstImage := col.New(8)
+		if len(t.FirstImage) > 0 {
+			firstImage.Add(image.NewFromBytes(t.FirstImage, extension.Jpg, imageStyle))
+		} else {
+			firstImage.Add(text.New("[No Capture]", props.Text{Size: 8, Style: fontstyle.Bold, Align: align.Center}))
+		}
+
+		secondImage := col.New(8)
+		if len(t.SecondImage) > 0 {
+			secondImage.Add(image.NewFromBytes(t.SecondImage, extension.Jpg, imageStyle))
+		} else {
+			// Align logic from deprecated: Top: 25 to push it down?
+			secondImage.Add(text.New("[No Capture]", props.Text{Size: 8, Style: fontstyle.Bold, Align: align.Center, Top: 25}))
+		}
+
+		lastSpace := 1.0
+
 		m.AddRows(
-			row.New(8).Add(
-				col.New(3).Add(text.New(tx.Datetime, props.Text{Size: 8})),
-				col.New(2).Add(text.New(tx.Gate, props.Text{Size: 8})),
-				col.New(2).Add(text.New(tx.Class, props.Text{Size: 8})),
-				col.New(3).Add(text.New(tx.Serial, props.Text{Size: 8})),
-				col.New(2).Add(text.New(tx.Status, props.Text{Size: 8})),
+			row.New().WithStyle(borderStyle).Add(
+				col.New(2).Add(
+					text.New("GARDU", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace, true)),
+					text.New("SHF/PRD", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+					text.New("NIK PUL", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+					text.New("NIK PAS", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+					text.New("WAKTU", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+					text.New("GOL/AVC", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+					text.New("METODA", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+					text.New("SERI", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+					text.New("STATUS", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+					text.New("ASAL", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+					text.New("KARTU", nextTextPropTop(bodyCheckTextStyle, textSpace, &lastSpace)),
+				),
+				col.New(4).Add(
+					text.New(fmt.Sprintf(": %s", t.GetStation()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace, true)),
+					text.New(fmt.Sprintf(": %s / %s", t.GetShift(), t.GetPeriod()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s", t.GetCollectorID()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s", t.GetPasID()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s", t.GetDatetime()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s / %s", t.GetClass(), t.GetAvc()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s", t.GetMethod()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s", t.GetSerial()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s", t.GetStatus()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s", t.GetOriginGate()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s", t.GetCardNumber()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+				),
+				firstImage,
+				secondImage,
 			),
 		)
 	}
@@ -177,4 +269,15 @@ func formatFilename(format string, metadata domain.TaskMetadata) string {
 	result = strings.ReplaceAll(result, "{date}", now.Format("20060102"))
 	result = strings.ReplaceAll(result, "{time}", now.Format("150405"))
 	return result
+}
+
+func nextTextPropTop(p props.Text, space float64, last *float64, reset ...bool) props.Text {
+	if len(reset) > 0 && reset[0] {
+		p.Top = 1.0
+		*last = 1.0
+		return p
+	}
+	p.Top = space + (*last)
+	*last = p.Top
+	return p
 }

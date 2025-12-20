@@ -14,16 +14,24 @@ import (
 
 // Transaction represents a toll transaction
 type Transaction struct {
-	ID       int
-	Branch   string
-	Gate     string
-	Station  string
-	Shift    string
-	Datetime string
-	Class    string
-	Serial   string
-	Status   string
-	Method   string
+	ID          int
+	Branch      string
+	Gate        string
+	Station     string
+	Shift       string
+	Period      string
+	CollectorID string
+	PasID       string
+	Avc         string
+	Datetime    string
+	Class       string
+	Method      string
+	Serial      string
+	Status      string
+	OriginGate  string
+	CardNumber  string
+	FirstImage  []byte
+	SecondImage []byte
 }
 
 // LoadTransactions loads transactions from MS Access database
@@ -46,7 +54,7 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 	}
 
 	// Build query with filters
-	query := `SELECT TOP 1000 [ID], [CB], [GB], [GD], [SHIFT], [WAKTU], [GOL], [SERI], [STATUS], [METODA] FROM CAPTURE WHERE 1=1`
+	query := `SELECT TOP 1000 [ID], [CB], [GB], [GD], [SHIFT], [PERIODA], [IDPUL], [IDPAS], [WAKTU], [GOL], [AVC], [METODA], [SERI], [STATUS], [AG], [NOKARTU], [IMAGE1], [IMAGE2] FROM CAPTURE WHERE 1=1`
 	var args []interface{}
 
 	if filter.Date != "" {
@@ -78,11 +86,19 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 			&t.Gate,
 			&t.Station,
 			&t.Shift,
+			&t.Period,
+			&t.CollectorID,
+			&t.PasID,
 			&datetime,
 			&t.Class,
+			&t.Avc,
+			&t.Method,
 			&t.Serial,
 			&t.Status,
-			&t.Method,
+			&t.OriginGate,
+			&t.CardNumber,
+			&t.FirstImage,
+			&t.SecondImage,
 		); err != nil {
 			log.Warn().Err(err).Msg("Failed to scan row")
 			continue
@@ -96,6 +112,113 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 	}
 
 	return transactions, nil
+}
+
+// GetStation returns the station name or "--" if empty
+func (t Transaction) GetStation() string {
+	if t.Station == "" {
+		return "--"
+	}
+	return t.Station
+}
+
+// GetShift returns the shift
+func (t Transaction) GetShift() string {
+	return t.Shift
+}
+
+// GetPeriod returns the period
+func (t Transaction) GetPeriod() string {
+	return t.Period
+}
+
+// GetCollectorID returns the collector ID or "--" if empty
+func (t Transaction) GetCollectorID() string {
+	if t.CollectorID == "" {
+		return "--"
+	}
+	return t.CollectorID
+}
+
+// GetPasID returns the Pas ID or "--" if empty
+func (t Transaction) GetPasID() string {
+	if t.PasID == "" {
+		return "--"
+	}
+	return t.PasID
+}
+
+// GetDatetime returns the formatted datetime
+func (t Transaction) GetDatetime() string {
+	// Datetime is already a string in this struct, assuming formatted in Scan
+	return t.Datetime
+}
+
+// GetClass returns the class or "-" if empty
+func (t Transaction) GetClass() string {
+	if t.Class == "" {
+		return "-"
+	}
+	return t.Class
+}
+
+// GetAvc returns the AVC
+func (t Transaction) GetAvc() string {
+	return t.Avc
+}
+
+// GetMethod returns the translated method
+func (t Transaction) GetMethod() string {
+	return TranslateTransactionMethod(t.Method)
+}
+
+// GetSerial returns the serial or "000000" if empty
+func (t Transaction) GetSerial() string {
+	if t.Serial == "" {
+		return "000000"
+	}
+	return t.Serial
+}
+
+// GetStatus returns the status
+func (t Transaction) GetStatus() string {
+	return t.Status
+}
+
+// GetOriginGate returns the origin gate or "00" if empty
+func (t Transaction) GetOriginGate() string {
+	if t.OriginGate == "" {
+		return "00"
+	}
+	return t.OriginGate
+}
+
+// GetCardNumber returns the card number or "--" if empty
+func (t Transaction) GetCardNumber() string {
+	if t.CardNumber == "" {
+		return "--"
+	}
+	return t.CardNumber
+}
+
+var (
+	transactionMethodTranslation = map[string]string{
+		"PPC":  "eToll Mdr",
+		"PPC0": "eToll Mdr",
+		"PPC1": "eToll BRI",
+		"PPC2": "eToll BNI",
+		"PPC3": "eToll BTN",
+		"PPC5": "eToll BCA",
+		"PPC7": "eToll DKI",
+	}
+)
+
+// TranslateTransactionMethod translates the transaction method code to a readable name
+func TranslateTransactionMethod(method string) string {
+	if m, ok := transactionMethodTranslation[method]; ok {
+		return m
+	}
+	return method
 }
 
 // GetDataSourcePath constructs the path to the Access database file
