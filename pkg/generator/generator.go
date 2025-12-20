@@ -21,6 +21,7 @@ import (
 	"github.com/johnfercher/maroto/v2/pkg/consts/extension"
 	"github.com/johnfercher/maroto/v2/pkg/consts/fontstyle"
 	"github.com/johnfercher/maroto/v2/pkg/consts/pagesize"
+	"github.com/johnfercher/maroto/v2/pkg/core/entity"
 	"github.com/johnfercher/maroto/v2/pkg/props"
 	"github.com/johnfercher/maroto/v2/pkg/repository"
 	"github.com/rs/zerolog/log"
@@ -87,18 +88,28 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 	fontName := "nunito-sans"
 	fontPath := "./assets/fonts/nunito-sans"
 
-	fonts, err := repository.New().
+	// Validate font path existence
+	if _, err := os.Stat(fontPath); os.IsNotExist(err) {
+		log.Warn().Str("path", fontPath).Msg("Font directory not found, using default fonts")
+	}
+
+	var fonts []*entity.CustomFont
+	var loadErr error
+
+	fonts, loadErr = repository.New().
 		AddUTF8Font(fontName, fontstyle.Normal, path.Join(fontPath, "nunito-sans.regular.ttf")).
 		AddUTF8Font(fontName, fontstyle.Italic, path.Join(fontPath, "nunito-sans.italic.ttf")).
 		AddUTF8Font(fontName, fontstyle.Bold, path.Join(fontPath, "nunito-sans.bold.ttf")).
 		AddUTF8Font(fontName, fontstyle.BoldItalic, path.Join(fontPath, "nunito-sans.bold-italic.ttf")).
 		Load()
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to load fonts")
+
+	if loadErr != nil {
+		log.Error().Err(loadErr).Msg("Failed to load custom fonts, falling back to default")
+		fonts = nil // Ensure nil if error
 	}
 
 	// Create PDF Config
-	cfg := config.NewBuilder().
+	builder := config.NewBuilder().
 		WithPageSize(getPageSize(pageSize)).
 		WithTopMargin(5).
 		WithBottomMargin(5).
@@ -106,10 +117,14 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 		WithRightMargin(5).
 		WithMaxGridSize(22).
 		WithCompression(true).
-		WithCustomFonts(fonts).
-		WithDefaultFont(&props.Font{Family: fontName}).
-		WithSequentialLowMemoryMode(5).
-		Build()
+		WithSequentialLowMemoryMode(5)
+
+	if fonts != nil {
+		builder.WithCustomFonts(fonts).
+			WithDefaultFont(&props.Font{Family: fontName})
+	}
+
+	cfg := builder.Build()
 
 	m := maroto.New(cfg)
 
