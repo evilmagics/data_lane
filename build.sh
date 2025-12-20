@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define output directory
-OUTPUT_DIR="output"
+OUTPUT_DIR="build"
 mkdir -p $OUTPUT_DIR
 
 echo "Building DataLane PDF Generator Service..."
