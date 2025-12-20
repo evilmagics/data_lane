@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/static"
@@ -193,6 +194,10 @@ func (s *Server) Start(addr string) error {
 
 	// Start service monitoring
 	if s.processService != nil {
+		// Auto-start worker service
+		if err := s.processService.EnsureRunning(context.Background()); err != nil {
+			log.Error().Err(err).Msg("Failed to auto-start worker service")
+		}
 		s.processService.StartMonitoring(context.Background())
 	}
 
