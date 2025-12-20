@@ -103,13 +103,12 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 func GetDataSourcePath(rootFolder string, transactionTime time.Time, stationID string) string {
 	// Format time components
 	monthShort := transactionTime.Format("01")
-	yearShort := transactionTime.Format("06")
 	day := transactionTime.Format("02")
 	yearFull := transactionTime.Format("2006")
-	
-	// Create folder name: MMYY (e.g., 1224)
-	folderName := monthShort + yearShort
-	
+
+	// Create folder name: MMYYYY (e.g., 122024)
+	folderName := monthShort + yearFull
+
 	// Create filename: DDMMYYYY.mdb (e.g., 20122024.mdb)
 	fileName := fmt.Sprintf("%s%s%s.mdb", day, monthShort, yearFull)
 
@@ -119,6 +118,6 @@ func GetDataSourcePath(rootFolder string, transactionTime time.Time, stationID s
 	if len(cleanStationID) == 1 {
 		cleanStationID = "0" + cleanStationID
 	}
-	
+
 	return fmt.Sprintf("%s/%s/%s/%s", rootFolder, folderName, cleanStationID, fileName)
 }
