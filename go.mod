@@ -3,6 +3,7 @@ module pdf_generator
 go 1.25.3
 
 require (
+	github.com/alexbrainman/odbc v0.0.0-20250601004241-49e6b2bc0cf0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-co-op/gocron/v2 v2.19.0
 	github.com/gofiber/fiber/v3 v3.0.0-rc.3
@@ -10,6 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/johnfercher/maroto/v2 v2.3.3
 	github.com/joho/godotenv v1.5.1
+	github.com/kardianos/service v1.2.4
 	github.com/mattn/go-adodb v0.0.1
 	github.com/mikestefanello/backlite v0.6.0
 	github.com/rs/zerolog v1.34.0
@@ -35,7 +37,6 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/johnfercher/go-tree v1.0.5 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
-	github.com/kardianos/service v1.2.4 // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

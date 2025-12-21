@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/mattn/go-adodb"
+	_ "github.com/alexbrainman/odbc"
 	"github.com/rs/zerolog/log"
 
 	"pdf_generator/internal/core/domain"
@@ -36,10 +36,10 @@ type Transaction struct {
 
 // LoadTransactions loads transactions from MS Access database
 func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilter) ([]Transaction, error) {
-	// Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\myFolder\myAccessFile.accdb;
-	dsn := fmt.Sprintf("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=%s;", dbPath)
+	// Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=C:\myFolder\myAccessFile.accdb;
+	dsn := fmt.Sprintf("Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=%s;", dbPath)
 
-	db, err := sql.Open("adodb", dsn)
+	db, err := sql.Open("odbc", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -72,10 +72,12 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
+	} else if rows == nil {
+		return nil, fmt.Errorf("query returned no rows")
 	}
 	defer rows.Close()
 
-	var transactions []Transaction
+	transactions := make([]Transaction, 0)
 	for rows.Next() {
 		var t Transaction
 		var datetime sql.NullTime
@@ -111,6 +113,7 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 		transactions = append(transactions, t)
 	}
 
+	log.Debug().Int("count", len(transactions)).Msg("Loaded transactions")
 	return transactions, nil
 }
 
