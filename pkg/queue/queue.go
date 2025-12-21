@@ -37,10 +37,10 @@ type Queue struct {
 	client       *backlite.Client
 	taskRepo     ports.TaskRepository
 	settingsRepo ports.SettingsRepository
-	
+
 	// Progress tracking for SSE
-	progressMu   sync.RWMutex
-	progress     map[string]*ports.TaskProgress
+	progressMu sync.RWMutex
+	progress   map[string]*ports.TaskProgress
 }
 
 // NewQueue creates a new queue instance
@@ -164,14 +164,14 @@ func (q *Queue) handlePDFTask(ctx context.Context, task PDFTask) error {
 	}
 
 	// Initialize progress tracking
-	q.setProgress(task.TaskID, "initializing", 0, 0)
+	q.setProgress(task.TaskID, "Initializing settings", 0, 0)
 
 	// Create a throttled progress callback that updates DB every 1 second
 	var lastUpdate time.Time
 	progressCallback := func(stage string, current, total int) {
 		// Always update in-memory progress
 		q.setProgress(task.TaskID, stage, current, total)
-		
+
 		// Throttle DB updates to once per second
 		now := time.Now()
 		if now.Sub(lastUpdate) >= time.Second {
@@ -186,21 +186,33 @@ func (q *Queue) handlePDFTask(ctx context.Context, task PDFTask) error {
 	output, size, err := generator.GeneratePDFWithProgress(ctx, task.Metadata, q.settingsRepo, progressCallback)
 	if err != nil {
 		log.Error().Err(err).Str("task_id", task.TaskID).Msg("PDF generation failed")
-		
+
 		// Update error message in database
 		if updateErr := q.taskRepo.UpdateError(ctx, task.TaskID, err.Error()); updateErr != nil {
 			log.Error().Err(updateErr).Str("task_id", task.TaskID).Msg("Failed to update error in DB")
 		}
-		
+
 		q.clearProgress(task.TaskID)
 		return err
 	}
 
-	// Update task with output
+	// Re-fetch task to get latest progress values from DB
+	dbTask, err = q.taskRepo.GetByID(ctx, task.TaskID)
+	if err != nil {
+		q.clearProgress(task.TaskID)
+		return err
+	}
+
+	// Update task with output - include final progress values from in-memory cache
+	finalProgress := q.GetProgress(task.TaskID)
 	dbTask.Status = domain.TaskStatusCompleted
 	dbTask.OutputFilePath = output
 	dbTask.OutputFileSize = size
-	dbTask.ProgressStage = "completed"
+	dbTask.ProgressStage = "Completed"
+	if finalProgress != nil {
+		dbTask.ProgressTotal = finalProgress.Total
+		dbTask.ProgressCurrent = finalProgress.Current
+	}
 	if err := q.taskRepo.Update(ctx, dbTask); err != nil {
 		q.clearProgress(task.TaskID)
 		return err
