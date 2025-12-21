@@ -38,6 +38,7 @@ The PDF Generator uses a persistent task queue to handle PDF generation jobs asy
     *   `Loading fonts`: Loading custom PDF fonts
     *   `Building PDF header`: Creating document header section
     *   `Appending transaction X of Y`: Processing each transaction row (progress_current increments)
+    *   `All transactions appended`: All transaction rows have been added to the document
     *   `Rendering PDF document`: Generating the final PDF
     *   `Writing file to disk`: Saving the PDF to output directory
     *   `Completed`: Done

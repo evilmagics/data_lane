@@ -253,6 +253,11 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 		)
 	}
 
+	// Report completion of transaction appending
+	if onProgress != nil {
+		onProgress("All transactions appended", totalTransactions, totalTransactions)
+	}
+
 	if onProgress != nil {
 		onProgress("Rendering PDF document", totalTransactions, totalTransactions)
 	}
