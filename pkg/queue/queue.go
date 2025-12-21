@@ -166,16 +166,23 @@ func (q *Queue) handlePDFTask(ctx context.Context, task PDFTask) error {
 	// Initialize progress tracking
 	q.setProgress(task.TaskID, "Initializing settings", 0, 0)
 
-	// Create a throttled progress callback that updates DB every 1 second
+	// Create a progress callback that:
+	// - Always updates in-memory progress immediately
+	// - Immediately updates DB when stage changes
+	// - Throttles DB updates to once per second when stage stays the same
 	var lastUpdate time.Time
+	var lastStage string
 	progressCallback := func(stage string, current, total int) {
-		// Always update in-memory progress
+		// Always update in-memory progress immediately
 		q.setProgress(task.TaskID, stage, current, total)
 
-		// Throttle DB updates to once per second
 		now := time.Now()
-		if now.Sub(lastUpdate) >= time.Second {
+		stageChanged := stage != lastStage
+		
+		// Update DB immediately on stage change, or throttled (once per second) for same stage
+		if stageChanged || now.Sub(lastUpdate) >= time.Second {
 			lastUpdate = now
+			lastStage = stage
 			if err := q.taskRepo.UpdateProgress(ctx, task.TaskID, stage, current, total); err != nil {
 				log.Warn().Err(err).Str("task_id", task.TaskID).Msg("Failed to update progress in DB")
 			}
