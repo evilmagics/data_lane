@@ -36,6 +36,21 @@ func (r *taskRepository) Update(ctx context.Context, task *domain.Task) error {
 	return r.db.WithContext(ctx).Save(task).Error
 }
 
+func (r *taskRepository) UpdateProgress(ctx context.Context, id string, stage string, current, total int) error {
+	return r.db.WithContext(ctx).Model(&domain.Task{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"progress_stage":   stage,
+		"progress_current": current,
+		"progress_total":   total,
+	}).Error
+}
+
+func (r *taskRepository) UpdateError(ctx context.Context, id string, errMsg string) error {
+	return r.db.WithContext(ctx).Model(&domain.Task{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"status":        domain.TaskStatusFailed,
+		"error_message": errMsg,
+	}).Error
+}
+
 func (r *taskRepository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&domain.Task{}, "id = ?", id).Error
 }

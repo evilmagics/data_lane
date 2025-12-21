@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/mikestefanello/backlite"
@@ -36,6 +37,10 @@ type Queue struct {
 	client       *backlite.Client
 	taskRepo     ports.TaskRepository
 	settingsRepo ports.SettingsRepository
+	
+	// Progress tracking for SSE
+	progressMu   sync.RWMutex
+	progress     map[string]*ports.TaskProgress
 }
 
 // NewQueue creates a new queue instance
@@ -75,6 +80,7 @@ func NewQueue(db *gorm.DB, taskRepo ports.TaskRepository, settingsRepo ports.Set
 		client:       client,
 		taskRepo:     taskRepo,
 		settingsRepo: settingsRepo,
+		progress:     make(map[string]*ports.TaskProgress),
 	}
 
 	return q, nil
@@ -116,6 +122,31 @@ func (q *Queue) Start(ctx context.Context) {
 	}()
 }
 
+// GetProgress returns the current progress for a task
+func (q *Queue) GetProgress(taskID string) *ports.TaskProgress {
+	q.progressMu.RLock()
+	defer q.progressMu.RUnlock()
+	return q.progress[taskID]
+}
+
+// setProgress updates the progress for a task
+func (q *Queue) setProgress(taskID, stage string, current, total int) {
+	q.progressMu.Lock()
+	q.progress[taskID] = &ports.TaskProgress{
+		Stage:   stage,
+		Current: current,
+		Total:   total,
+	}
+	q.progressMu.Unlock()
+}
+
+// clearProgress removes progress tracking for a task
+func (q *Queue) clearProgress(taskID string) {
+	q.progressMu.Lock()
+	delete(q.progress, taskID)
+	q.progressMu.Unlock()
+}
+
 // handlePDFTask processes a PDF generation task
 func (q *Queue) handlePDFTask(ctx context.Context, task PDFTask) error {
 	log.Info().Str("task_id", task.TaskID).Msg("Processing PDF task")
@@ -132,12 +163,36 @@ func (q *Queue) handlePDFTask(ctx context.Context, task PDFTask) error {
 		return err
 	}
 
-	// Generate PDF
-	output, size, err := generator.GeneratePDF(ctx, task.Metadata, q.settingsRepo)
+	// Initialize progress tracking
+	q.setProgress(task.TaskID, "initializing", 0, 0)
+
+	// Create a throttled progress callback that updates DB every 1 second
+	var lastUpdate time.Time
+	progressCallback := func(stage string, current, total int) {
+		// Always update in-memory progress
+		q.setProgress(task.TaskID, stage, current, total)
+		
+		// Throttle DB updates to once per second
+		now := time.Now()
+		if now.Sub(lastUpdate) >= time.Second {
+			lastUpdate = now
+			if err := q.taskRepo.UpdateProgress(ctx, task.TaskID, stage, current, total); err != nil {
+				log.Warn().Err(err).Str("task_id", task.TaskID).Msg("Failed to update progress in DB")
+			}
+		}
+	}
+
+	// Generate PDF with progress tracking
+	output, size, err := generator.GeneratePDFWithProgress(ctx, task.Metadata, q.settingsRepo, progressCallback)
 	if err != nil {
 		log.Error().Err(err).Str("task_id", task.TaskID).Msg("PDF generation failed")
-		dbTask.Status = domain.TaskStatusFailed
-		q.taskRepo.Update(ctx, dbTask)
+		
+		// Update error message in database
+		if updateErr := q.taskRepo.UpdateError(ctx, task.TaskID, err.Error()); updateErr != nil {
+			log.Error().Err(updateErr).Str("task_id", task.TaskID).Msg("Failed to update error in DB")
+		}
+		
+		q.clearProgress(task.TaskID)
 		return err
 	}
 
@@ -145,10 +200,13 @@ func (q *Queue) handlePDFTask(ctx context.Context, task PDFTask) error {
 	dbTask.Status = domain.TaskStatusCompleted
 	dbTask.OutputFilePath = output
 	dbTask.OutputFileSize = size
+	dbTask.ProgressStage = "completed"
 	if err := q.taskRepo.Update(ctx, dbTask); err != nil {
+		q.clearProgress(task.TaskID)
 		return err
 	}
 
+	q.clearProgress(task.TaskID)
 	log.Info().Str("task_id", task.TaskID).Str("output", output).Msg("PDF generated successfully")
 	return nil
 }

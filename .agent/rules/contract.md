@@ -82,6 +82,12 @@ You MUST:
   * Response body
   * Status codes
   * Scripts (optional)
+  * Description
+    * Title
+    * Purpose
+    * Request fields
+    * Responses fields
+    * Headers need
 * **Update the Local Postman Collection JSON:**
   * Locate the collection file (typically in docs/spec/postman/collections).
   * Modify the JSON structure directly to reflect the API changes (Add/Update Request).

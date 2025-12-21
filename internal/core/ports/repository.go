@@ -11,6 +11,8 @@ type TaskRepository interface {
 	Create(ctx context.Context, task *domain.Task) error
 	GetByID(ctx context.Context, id string) (*domain.Task, error)
 	Update(ctx context.Context, task *domain.Task) error
+	UpdateProgress(ctx context.Context, id string, stage string, current, total int) error
+	UpdateError(ctx context.Context, id string, errMsg string) error
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, filter TaskFilter) ([]domain.Task, int64, error)
 	CountByStatus(ctx context.Context, status domain.TaskStatus) (int64, error)

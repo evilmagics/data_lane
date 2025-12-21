@@ -161,10 +161,14 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 		Settings:   req.Settings,
 	}
 	metadataJSON, _ := json.Marshal(metadata)
+	filterJSON, _ := json.Marshal(req.Filter)
 
 	task := &domain.Task{
-		Status:   domain.TaskStatusQueued,
-		Metadata: string(metadataJSON),
+		Status:     domain.TaskStatusQueued,
+		RootFolder: req.RootFolder,
+		StationID:  req.StationID,
+		FilterJSON: string(filterJSON),
+		Metadata:   string(metadataJSON), // Keep for backward compat
 	}
 
 	if err := h.taskRepo.Create(c.Context(), task); err != nil {

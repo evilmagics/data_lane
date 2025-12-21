@@ -22,6 +22,10 @@ type MockTaskRepo struct {
 func (m *MockTaskRepo) Create(ctx context.Context, task *domain.Task) error { return nil }
 func (m *MockTaskRepo) GetByID(ctx context.Context, id string) (*domain.Task, error) { return nil, nil }
 func (m *MockTaskRepo) Update(ctx context.Context, task *domain.Task) error { return nil }
+func (m *MockTaskRepo) UpdateProgress(ctx context.Context, id string, stage string, current, total int) error {
+	return nil
+}
+func (m *MockTaskRepo) UpdateError(ctx context.Context, id string, errMsg string) error { return nil }
 func (m *MockTaskRepo) Delete(ctx context.Context, id string) error { return nil }
 func (m *MockTaskRepo) List(ctx context.Context, filter ports.TaskFilter) ([]domain.Task, int64, error) { 
 	return nil, 0, nil

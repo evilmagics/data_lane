@@ -31,9 +31,17 @@ import (
 	"pdf_generator/pkg/datasource"
 )
 
-// GeneratePDF creates a PDF from the given metadata
-func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository) (string, int64, error) {
+// ProgressCallback is called to report generation progress
+type ProgressCallback func(stage string, current, total int)
+
+// GeneratePDFWithProgress creates a PDF from the given metadata with progress reporting
+func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository, onProgress ProgressCallback) (string, int64, error) {
 	log.Info().Int("branch_id", metadata.BranchID).Msg("Starting PDF generation")
+
+	// Report initial progress
+	if onProgress != nil {
+		onProgress("initializing", 0, 0)
+	}
 
 	// Load settings
 	branchName := getSettingOrDefault(ctx, settingsRepo, domain.SettingBranchName, strconv.Itoa(metadata.BranchID))
@@ -73,16 +81,25 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 		targetDate = time.Now()
 	}
 
+	if onProgress != nil {
+		onProgress("loading_data", 0, 0)
+	}
+
 	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.StationID))
+	log.Debug().Str("db_path", dbPath).Msg("Using database path")
 	dbPath = filepath.FromSlash(dbPath) // Ensure correct separators for Windows
 	transactions, err := datasource.LoadTransactions(ctx, dbPath, metadata.Filter)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load transactions")
-		// Fail gracefully? Or return error.
 		return "", 0, err
 	}
 
-	log.Info().Int("count", len(transactions)).Msg("Loaded transactions")
+	totalTransactions := len(transactions)
+	log.Info().Int("count", totalTransactions).Msg("Loaded transactions")
+
+	if onProgress != nil {
+		onProgress("loading_fonts", 0, totalTransactions)
+	}
 
 	// Load Fonts
 	fontName := "nunito-sans"
@@ -106,6 +123,10 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 	if loadErr != nil {
 		log.Error().Err(loadErr).Msg("Failed to load custom fonts, falling back to default")
 		fonts = nil // Ensure nil if error
+	}
+
+	if onProgress != nil {
+		onProgress("generating", 0, totalTransactions)
 	}
 
 	// Create PDF Config
@@ -175,7 +196,12 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 		BorderThickness: 0.42,
 	}
 
-	for _, t := range transactions {
+	for i, t := range transactions {
+		// Report progress for each transaction
+		if onProgress != nil {
+			onProgress("generating", i+1, totalTransactions)
+		}
+
 		firstImage := col.New(8)
 		if len(t.FirstImage) > 0 {
 			firstImage.Add(image.NewFromBytes(t.FirstImage, extension.Jpg, imageStyle))
@@ -227,12 +253,23 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 		)
 	}
 
+	if onProgress != nil {
+		onProgress("saving", totalTransactions, totalTransactions)
+	}
+
 	// Generate output filename
 	filename := formatFilename(filenameFormat, metadata)
-	outputPath := filepath.Join("output", filename+".pdf")
+	
+	// Get absolute path for output directory
+	outputDir, err := filepath.Abs("output")
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to get absolute output path: %w", err)
+	}
+	
+	outputPath := filepath.Join(outputDir, filename+".pdf")
 
 	// Ensure output directory exists
-	os.MkdirAll("output", 0755)
+	os.MkdirAll(outputDir, 0755)
 
 	// Generate document
 	doc, err := m.Generate()
@@ -250,8 +287,17 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 		return outputPath, 0, nil
 	}
 
+	if onProgress != nil {
+		onProgress("completed", totalTransactions, totalTransactions)
+	}
+
 	log.Info().Str("output", outputPath).Int64("size", info.Size()).Msg("PDF generated")
 	return outputPath, info.Size(), nil
+}
+
+// GeneratePDF creates a PDF from the given metadata (legacy wrapper without progress)
+func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository) (string, int64, error) {
+	return GeneratePDFWithProgress(ctx, metadata, settingsRepo, nil)
 }
 
 func getSettingOrDefault(ctx context.Context, repo ports.SettingsRepository, key, defaultVal string) string {

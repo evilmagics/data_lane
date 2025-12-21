@@ -3,6 +3,7 @@ package handlers
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -15,11 +16,15 @@ import (
 // SSEHandler handles Server-Sent Events
 type SSEHandler struct {
 	taskRepo ports.TaskRepository
+	queue    ports.QueueService
 }
 
 // NewSSEHandler creates a new SSE handler
-func NewSSEHandler(taskRepo ports.TaskRepository) *SSEHandler {
-	return &SSEHandler{taskRepo: taskRepo}
+func NewSSEHandler(taskRepo ports.TaskRepository, queue ports.QueueService) *SSEHandler {
+	return &SSEHandler{
+		taskRepo: taskRepo,
+		queue:    queue,
+	}
 }
 
 // GlobalEvents handles GET /sse/events (Admin only)
@@ -69,7 +74,18 @@ func (h *SSEHandler) GlobalEvents(c fiber.Ctx) error {
 	return nil
 }
 
+// TaskProgressEvent represents the SSE event data for task progress
+type TaskProgressEvent struct {
+	Status          string `json:"status"`
+	OutputSize      int64  `json:"output_size"`
+	ErrorMessage    string `json:"error_message,omitempty"`
+	ProgressStage   string `json:"progress_stage,omitempty"`
+	ProgressCurrent int    `json:"progress_current"`
+	ProgressTotal   int    `json:"progress_total"`
+}
+
 // TaskEvents handles GET /sse/tasks/:id (Shared)
+// Pushes progress updates every 1 second
 func (h *SSEHandler) TaskEvents(c fiber.Ctx) error {
 	taskID := c.Params("id")
 
@@ -79,10 +95,11 @@ func (h *SSEHandler) TaskEvents(c fiber.Ctx) error {
 	c.Set("Transfer-Encoding", "chunked")
 
 	c.SendStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
-		ticker := time.NewTicker(2 * time.Second)
+		ticker := time.NewTicker(1 * time.Second) // Push every 1 second
 		defer ticker.Stop()
 
 		var lastStatus string
+		var lastProgress string
 		
 		for {
 			select {
@@ -96,16 +113,51 @@ func (h *SSEHandler) TaskEvents(c fiber.Ctx) error {
 					return
 				}
 
-				// Only send if status changed
-				if string(task.Status) != lastStatus {
-					data := fmt.Sprintf(`{"status":"%s","output_size":%d}`, task.Status, task.OutputFileSize)
-					fmt.Fprintf(w, "event: status\n")
-					fmt.Fprintf(w, "data: %s\n\n", data)
+				// Get real-time progress from queue if available
+				var progressStage string
+				var progressCurrent, progressTotal int
+				
+				if h.queue != nil {
+					progress := h.queue.GetProgress(taskID)
+					if progress != nil {
+						progressStage = progress.Stage
+						progressCurrent = progress.Current
+						progressTotal = progress.Total
+					} else {
+						// Fall back to DB values
+						progressStage = task.ProgressStage
+						progressCurrent = task.ProgressCurrent
+						progressTotal = task.ProgressTotal
+					}
+				} else {
+					progressStage = task.ProgressStage
+					progressCurrent = task.ProgressCurrent
+					progressTotal = task.ProgressTotal
+				}
+
+				// Build event data
+				eventData := TaskProgressEvent{
+					Status:          string(task.Status),
+					OutputSize:      task.OutputFileSize,
+					ErrorMessage:    task.ErrorMessage,
+					ProgressStage:   progressStage,
+					ProgressCurrent: progressCurrent,
+					ProgressTotal:   progressTotal,
+				}
+
+				eventJSON, _ := json.Marshal(eventData)
+				currentState := string(eventJSON)
+
+				// Send if status or progress changed
+				if currentState != lastStatus || progressStage != lastProgress {
+					fmt.Fprintf(w, "event: progress\n")
+					fmt.Fprintf(w, "data: %s\n\n", currentState)
 					if err := w.Flush(); err != nil {
 						return
 					}
 					
-					lastStatus = string(task.Status)
+					lastStatus = currentState
+					lastProgress = progressStage
 
 					// Stop streaming if task is terminal
 					if task.Status == "completed" || task.Status == "failed" || task.Status == "cancelled" {

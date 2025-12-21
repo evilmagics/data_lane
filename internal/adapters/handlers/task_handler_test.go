@@ -42,7 +42,11 @@ func (m *MockTaskRepo) CountByStatus(ctx context.Context, status domain.TaskStat
 // ... other TaskRepo methods if needed
 func (m *MockTaskRepo) GetByID(ctx context.Context, id string) (*domain.Task, error) { return nil, nil }
 func (m *MockTaskRepo) Update(ctx context.Context, task *domain.Task) error          { return nil }
-func (m *MockTaskRepo) Delete(ctx context.Context, id string) error                  { return nil }
+func (m *MockTaskRepo) UpdateProgress(ctx context.Context, id string, stage string, current, total int) error {
+	return nil
+}
+func (m *MockTaskRepo) UpdateError(ctx context.Context, id string, errMsg string) error { return nil }
+func (m *MockTaskRepo) Delete(ctx context.Context, id string) error                     { return nil }
 func (m *MockTaskRepo) List(ctx context.Context, filter ports.TaskFilter) ([]domain.Task, int64, error) {
 	return nil, 0, nil
 }
@@ -61,6 +65,10 @@ func (m *MockQueue) Enqueue(ctx context.Context, taskID string, metadata domain.
 
 func (m *MockQueue) Start(ctx context.Context) {
 	m.Called(ctx)
+}
+
+func (m *MockQueue) GetProgress(taskID string) *ports.TaskProgress {
+	return nil
 }
 
 func TestTaskHandler_Enqueue(t *testing.T) {

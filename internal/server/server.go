@@ -72,7 +72,7 @@ func (s *Server) SetupRoutes() {
 	stationHandler := handlers.NewStationHandler(s.stationService)
 	taskHandler := handlers.NewTaskHandler(s.taskRepo, s.queue)
 	scheduleHandler := handlers.NewScheduleHandler(s.scheduleRepo)
-	sseHandler := handlers.NewSSEHandler(s.taskRepo)
+	sseHandler := handlers.NewSSEHandler(s.taskRepo, s.queue)
 
 	// API group
 	api := s.app.Group("/api")
