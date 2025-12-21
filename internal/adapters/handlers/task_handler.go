@@ -161,12 +161,14 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 		Settings:   req.Settings,
 	}
 	filterJSON, _ := json.Marshal(req.Filter)
+	settingsJSON, _ := json.Marshal(req.Settings)
 
 	task := &domain.Task{
-		Status:     domain.TaskStatusQueued,
-		RootFolder: req.RootFolder,
-		StationID:  req.StationID,
-		FilterJSON: string(filterJSON),
+		Status:       domain.TaskStatusQueued,
+		RootFolder:   req.RootFolder,
+		StationID:    req.StationID,
+		FilterJSON:   string(filterJSON),
+		SettingsJSON: string(settingsJSON),
 	}
 
 	if err := h.taskRepo.Create(c.Context(), task); err != nil {

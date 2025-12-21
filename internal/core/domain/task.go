@@ -22,25 +22,26 @@ const (
 
 // Task represents a PDF generation job
 type Task struct {
-	ID              string     `gorm:"primaryKey;type:text" json:"id"`
-	ScheduleID      *string    `gorm:"type:text;index" json:"schedule_id,omitempty"`
-	Status          TaskStatus `gorm:"type:text;index;not null;default:'queued'" json:"status"`
-	ErrorMessage    string     `gorm:"type:text" json:"error_message,omitempty"`
-	
+	ID           string     `gorm:"primaryKey;type:text" json:"id"`
+	ScheduleID   *string    `gorm:"type:text;index" json:"schedule_id,omitempty"`
+	Status       TaskStatus `gorm:"type:text;index;not null;default:'queued'" json:"status"`
+	ErrorMessage string     `gorm:"type:text" json:"error_message,omitempty"`
+
 	// Extracted metadata fields
-	RootFolder      string     `gorm:"type:text" json:"root_folder"`
-	StationID       int        `gorm:"type:integer" json:"station_id"`
-	FilterJSON      string     `gorm:"type:text" json:"filter_json"` // JSON string of TaskFilter
-	
+	RootFolder   string `gorm:"type:text" json:"root_folder"`
+	StationID    int    `gorm:"type:integer" json:"station_id"`
+	FilterJSON   string `gorm:"type:text" json:"filter_json"`   // JSON string of TaskFilter
+	SettingsJSON string `gorm:"type:text" json:"settings_json"` // JSON string of custom settings
+
 	// Progress tracking
-	ProgressStage   string     `gorm:"type:text" json:"progress_stage,omitempty"`   // Detailed stage description
-	ProgressTotal   int        `gorm:"type:integer;default:0" json:"progress_total"`   // Total transactions to process
-	ProgressCurrent int        `gorm:"type:integer;default:0" json:"progress_current"` // Current processed count
-	
-	OutputFilePath  string     `gorm:"type:text" json:"output_file_path,omitempty"`
-	OutputFileSize  int64      `gorm:"type:integer;default:0" json:"output_file_size"`
-	CreatedAt       time.Time  `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt       time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+	ProgressStage   string `gorm:"type:text" json:"progress_stage,omitempty"`      // Detailed stage description
+	ProgressTotal   int    `gorm:"type:integer;default:0" json:"progress_total"`   // Total transactions to process
+	ProgressCurrent int    `gorm:"type:integer;default:0" json:"progress_current"` // Current processed count
+
+	OutputFilePath string    `gorm:"type:text" json:"output_file_path,omitempty"`
+	OutputFileSize int64     `gorm:"type:integer;default:0" json:"output_file_size"`
+	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt      time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 func (t *Task) BeforeCreate(tx *gorm.DB) error {
@@ -52,21 +53,20 @@ func (t *Task) BeforeCreate(tx *gorm.DB) error {
 
 // TaskMetadata contains the parameters for PDF generation (used in queue, not stored directly)
 type TaskMetadata struct {
-	RootFolder   string                  `json:"root_folder"`
-	BranchID     int                     `json:"branch_id"`   // Fetched from settings
-	GateID       int                     `json:"gate_id"`     // Fetched from settings
-	StationID    int                     `json:"station_id"`
-	Filter       TaskFilter              `json:"filter"`
-	Settings     map[string]string       `json:"settings,omitempty"`
+	RootFolder string            `json:"root_folder"`
+	BranchID   int               `json:"branch_id"` // Fetched from settings
+	GateID     int               `json:"gate_id"`   // Fetched from settings
+	StationID  int               `json:"station_id"`
+	Filter     TaskFilter        `json:"filter"`
+	Settings   map[string]string `json:"settings,omitempty"`
 }
 
 // TaskFilter contains date and transaction filtering options
+// Date mode is auto-detected: if Date is set, use daily mode; if RangeStart/RangeEnd set, use range mode
 type TaskFilter struct {
-	DateMode          string `json:"date_mode"`          // daily, range, yesterday
-	Date              string `json:"date,omitempty"`
-	RangeStart        string `json:"range_start,omitempty"`
-	RangeEnd          string `json:"range_end,omitempty"`
-	TransactionStatus string `json:"transaction_status,omitempty"`
-	Limit             int    `json:"limit,omitempty"`    // Max transactions to fetch, 0 = unlimited
+	Date              string `json:"date,omitempty"`               // Single date (YYYY-MM-DD)
+	RangeStart        string `json:"range_start,omitempty"`        // Range start date
+	RangeEnd          string `json:"range_end,omitempty"`          // Range end date
+	TransactionStatus string `json:"transaction_status,omitempty"` // Filter by status
+	Limit             int    `json:"limit,omitempty"`              // Max transactions to fetch, 0 = unlimited
 }
-
