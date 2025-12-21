@@ -67,5 +67,6 @@ type TaskFilter struct {
 	RangeStart        string `json:"range_start,omitempty"`
 	RangeEnd          string `json:"range_end,omitempty"`
 	TransactionStatus string `json:"transaction_status,omitempty"`
+	Limit             int    `json:"limit,omitempty"`    // Max transactions to fetch, 0 = unlimited
 }
 

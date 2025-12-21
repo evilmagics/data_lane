@@ -54,7 +54,13 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 	}
 
 	// Build query with filters
-	query := `SELECT TOP 1000 [ID], [CB], [GB], [GD], [SHIFT], [PERIODA], [IDPUL], [IDPAS], [WAKTU], [GOL], [AVC], [METODA], [SERI], [STATUS], [AG], [NOKARTU], [IMAGE1], [IMAGE2] FROM CAPTURE WHERE 1=1`
+	// Use TOP clause only if limit is specified
+	var query string
+	if filter.Limit > 0 {
+		query = fmt.Sprintf(`SELECT TOP %d [ID], [CB], [GB], [GD], [SHIFT], [PERIODA], [IDPUL], [IDPAS], [WAKTU], [GOL], [AVC], [METODA], [SERI], [STATUS], [AG], [NOKARTU], [IMAGE1], [IMAGE2] FROM CAPTURE WHERE 1=1`, filter.Limit)
+	} else {
+		query = `SELECT [ID], [CB], [GB], [GD], [SHIFT], [PERIODA], [IDPUL], [IDPAS], [WAKTU], [GOL], [AVC], [METODA], [SERI], [STATUS], [AG], [NOKARTU], [IMAGE1], [IMAGE2] FROM CAPTURE WHERE 1=1`
+	}
 	var args []interface{}
 
 	if filter.Date != "" {
