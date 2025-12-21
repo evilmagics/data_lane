@@ -97,9 +97,6 @@ func (h *SSEHandler) TaskEvents(c fiber.Ctx) error {
 	c.SendStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
 		ticker := time.NewTicker(1 * time.Second) // Push every 1 second
 		defer ticker.Stop()
-
-		var lastStatus string
-		var lastProgress string
 		
 		for {
 			select {
@@ -146,23 +143,17 @@ func (h *SSEHandler) TaskEvents(c fiber.Ctx) error {
 				}
 
 				eventJSON, _ := json.Marshal(eventData)
-				currentState := string(eventJSON)
 
-				// Send if status or progress changed
-				if currentState != lastStatus || progressStage != lastProgress {
-					fmt.Fprintf(w, "event: progress\n")
-					fmt.Fprintf(w, "data: %s\n\n", currentState)
-					if err := w.Flush(); err != nil {
-						return
-					}
-					
-					lastStatus = currentState
-					lastProgress = progressStage
+				// Always send progress every second
+				fmt.Fprintf(w, "event: progress\n")
+				fmt.Fprintf(w, "data: %s\n\n", string(eventJSON))
+				if err := w.Flush(); err != nil {
+					return
+				}
 
-					// Stop streaming if task is terminal
-					if task.Status == "completed" || task.Status == "failed" || task.Status == "cancelled" {
-						return
-					}
+				// Stop streaming if task is terminal
+				if task.Status == "completed" || task.Status == "failed" || task.Status == "cancelled" {
+					return
 				}
 			}
 		}
