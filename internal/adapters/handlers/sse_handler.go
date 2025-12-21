@@ -95,8 +95,10 @@ func (h *SSEHandler) TaskEvents(c fiber.Ctx) error {
 	c.Set("Transfer-Encoding", "chunked")
 
 	c.SendStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
-		ticker := time.NewTicker(1 * time.Second) // Push every 1 second
+		ticker := time.NewTicker(1 * time.Second) // Check every 1 second
 		defer ticker.Stop()
+
+		var lastEventJSON string
 		
 		for {
 			select {
@@ -143,12 +145,21 @@ func (h *SSEHandler) TaskEvents(c fiber.Ctx) error {
 				}
 
 				eventJSON, _ := json.Marshal(eventData)
+				currentEventJSON := string(eventJSON)
 
-				// Always send progress every second
-				fmt.Fprintf(w, "event: progress\n")
-				fmt.Fprintf(w, "data: %s\n\n", string(eventJSON))
-				if err := w.Flush(); err != nil {
-					return
+				// Determine if we should send:
+				// 1. Always send if stage is "Appending transaction" (progress updates every second)
+				// 2. Otherwise, only send if state has changed
+				isAppendingStage := len(progressStage) >= 8 && progressStage[:8] == "Appending"
+				shouldSend := isAppendingStage || currentEventJSON != lastEventJSON
+
+				if shouldSend {
+					fmt.Fprintf(w, "event: progress\n")
+					fmt.Fprintf(w, "data: %s\n\n", currentEventJSON)
+					if err := w.Flush(); err != nil {
+						return
+					}
+					lastEventJSON = currentEventJSON
 				}
 
 				// Stop streaming if task is terminal
