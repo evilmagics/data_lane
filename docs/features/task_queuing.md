@@ -32,13 +32,15 @@ The PDF Generator uses a persistent task queue to handle PDF generation jobs asy
       "error_message": ""
     }
     ```
-*   **Stages**:
-    *   `initializing`: Task starting
-    *   `loading_data`: Connecting to database and fetching transactions
-    *   `loading_fonts`: Loading PDF fonts
-    *   `generating`: Processing transactions (progress_current increments)
-    *   `saving`: Writing PDF to disk
-    *   `completed`: Done
+*   **Stages** (human-readable descriptions):
+    *   `Initializing settings`: Task starting, loading configuration
+    *   `Connecting to database`: Opening Access database connection
+    *   `Loading fonts`: Loading custom PDF fonts
+    *   `Building PDF header`: Creating document header section
+    *   `Appending transaction X of Y`: Processing each transaction row (progress_current increments)
+    *   `Rendering PDF document`: Generating the final PDF
+    *   `Writing file to disk`: Saving the PDF to output directory
+    *   `Completed`: Done
 
 ## Queue Configuration
 *   **Concurrency**: Controlled by the `queue_concurrency` setting (default: 1).

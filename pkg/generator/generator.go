@@ -40,7 +40,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 
 	// Report initial progress
 	if onProgress != nil {
-		onProgress("initializing", 0, 0)
+		onProgress("Initializing settings", 0, 0)
 	}
 
 	// Load settings
@@ -82,7 +82,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	}
 
 	if onProgress != nil {
-		onProgress("loading_data", 0, 0)
+		onProgress("Connecting to database", 0, 0)
 	}
 
 	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.StationID))
@@ -98,7 +98,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	log.Info().Int("count", totalTransactions).Msg("Loaded transactions")
 
 	if onProgress != nil {
-		onProgress("loading_fonts", 0, totalTransactions)
+		onProgress("Loading fonts", 0, totalTransactions)
 	}
 
 	// Load Fonts
@@ -126,7 +126,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	}
 
 	if onProgress != nil {
-		onProgress("generating", 0, totalTransactions)
+		onProgress("Building PDF header", 0, totalTransactions)
 	}
 
 	// Create PDF Config
@@ -199,7 +199,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	for i, t := range transactions {
 		// Report progress for each transaction
 		if onProgress != nil {
-			onProgress("generating", i+1, totalTransactions)
+			onProgress(fmt.Sprintf("Appending transaction %d of %d", i+1, totalTransactions), i+1, totalTransactions)
 		}
 
 		firstImage := col.New(8)
@@ -254,18 +254,18 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	}
 
 	if onProgress != nil {
-		onProgress("saving", totalTransactions, totalTransactions)
+		onProgress("Rendering PDF document", totalTransactions, totalTransactions)
 	}
 
 	// Generate output filename
 	filename := formatFilename(filenameFormat, metadata)
-	
+
 	// Get absolute path for output directory
 	outputDir, err := filepath.Abs("output")
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to get absolute output path: %w", err)
 	}
-	
+
 	outputPath := filepath.Join(outputDir, filename+".pdf")
 
 	// Ensure output directory exists
@@ -275,6 +275,10 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	doc, err := m.Generate()
 	if err != nil {
 		return "", 0, err
+	}
+
+	if onProgress != nil {
+		onProgress("Writing file to disk", totalTransactions, totalTransactions)
 	}
 
 	if err := doc.Save(outputPath); err != nil {
@@ -288,7 +292,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	}
 
 	if onProgress != nil {
-		onProgress("completed", totalTransactions, totalTransactions)
+		onProgress("Completed", totalTransactions, totalTransactions)
 	}
 
 	log.Info().Str("output", outputPath).Int64("size", info.Size()).Msg("PDF generated")

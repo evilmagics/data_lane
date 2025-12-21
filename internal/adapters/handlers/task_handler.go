@@ -151,7 +151,7 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 		return api.Error(c, api.CodeValidationError, "Station ID must be between 0 and 100")
 	}
 
-	// Create task metadata
+	// Create task metadata for queue
 	metadata := domain.TaskMetadata{
 		RootFolder: req.RootFolder,
 		BranchID:   req.BranchID,
@@ -160,7 +160,6 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 		Filter:     req.Filter,
 		Settings:   req.Settings,
 	}
-	metadataJSON, _ := json.Marshal(metadata)
 	filterJSON, _ := json.Marshal(req.Filter)
 
 	task := &domain.Task{
@@ -168,7 +167,6 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 		RootFolder: req.RootFolder,
 		StationID:  req.StationID,
 		FilterJSON: string(filterJSON),
-		Metadata:   string(metadataJSON), // Keep for backward compat
 	}
 
 	if err := h.taskRepo.Create(c.Context(), task); err != nil {

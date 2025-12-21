@@ -33,12 +33,9 @@ type Task struct {
 	FilterJSON      string     `gorm:"type:text" json:"filter_json"` // JSON string of TaskFilter
 	
 	// Progress tracking
-	ProgressStage   string     `gorm:"type:text" json:"progress_stage,omitempty"`   // e.g., "loading", "generating", "saving"
+	ProgressStage   string     `gorm:"type:text" json:"progress_stage,omitempty"`   // Detailed stage description
 	ProgressTotal   int        `gorm:"type:integer;default:0" json:"progress_total"`   // Total transactions to process
 	ProgressCurrent int        `gorm:"type:integer;default:0" json:"progress_current"` // Current processed count
-	
-	// Legacy metadata field (for backward compatibility during migration)
-	Metadata        string     `gorm:"type:text" json:"metadata,omitempty"` // JSON string (deprecated)
 	
 	OutputFilePath  string     `gorm:"type:text" json:"output_file_path,omitempty"`
 	OutputFileSize  int64      `gorm:"type:integer;default:0" json:"output_file_size"`
