@@ -66,11 +66,18 @@ func AuthMiddleware(authService *services.AuthService, apiKeyService *services.A
 	}
 }
 
-// AdminOnly restricts access to admin users only
-func AdminOnly() fiber.Handler {
+// AdminOnly restricts access to admin users only (when security is enabled)
+func AdminOnly(settingsService *services.SettingsService) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		// Public routes exception
 		if strings.HasSuffix(c.Path(), "/auth/login") {
+			return c.Next()
+		}
+
+		// Check if security is enabled
+		securityEnabled, _ := settingsService.Get(c.Context(), domain.SettingSecurityEnabled)
+		if securityEnabled != "true" {
+			// Security disabled - allow all requests
 			return c.Next()
 		}
 

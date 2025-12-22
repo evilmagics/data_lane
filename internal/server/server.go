@@ -110,7 +110,7 @@ func (s *Server) SetupRoutes() {
 	protected.Get("/sse/tasks/:id", sseHandler.TaskEvents)
 
 	// Admin-only routes
-	admin := protected.Group("", middleware.AdminOnly())
+	admin := protected.Group("", middleware.AdminOnly(s.settingsService))
 	hmacAdmin := admin.Group("", middleware.HMACMiddleware(s.settingsService))
 
 	// Auth (Admin)
