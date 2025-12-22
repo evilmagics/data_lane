@@ -13,10 +13,11 @@ type Settings struct {
 
 // Known setting keys
 const (
-	SettingSecurityEnabled       = "security_enabled"      // Enable/disable all API security
+	SettingSecurityEnabled       = "security_enabled"        // Enable/disable all API security
 	SettingBranchID              = "branch_id"
 	SettingBranchName            = "branch_name"
 	SettingManagementCompany     = "management_company"
+	SettingAnalyzerOperatorName  = "analyzer_operator_name"  // Analyzer operator name for PDF header
 	SettingPageSize              = "page_size"
 	SettingOutputFilenameFormat  = "output_filename_format"
 	SettingTimeOverlap           = "time_overlap"
@@ -36,6 +37,7 @@ func DefaultSettings() []Settings {
 		{Key: SettingBranchID, Value: "001", Name: "Branch ID", Icon: "Key", Group: "General", DataType: "string", Content: htmlContent("Unique identifier for the branch.")},
 		{Key: SettingBranchName, Value: "BRANCH", Name: "Branch Name", Icon: "Building", Group: "General", DataType: "string", Content: htmlContent("Display name of the branch.")},
 		{Key: SettingManagementCompany, Value: "PT Company", Name: "Management Company", Icon: "Briefcase", Group: "General", DataType: "string", Content: htmlContent("Name of the management company.")},
+		{Key: SettingAnalyzerOperatorName, Value: "Analyzer Operator", Name: "Analyzer Operator Name", Icon: "User", Group: "General", DataType: "string", Content: htmlContent("Name of the analyzer operator displayed in PDF headers.")},
 		{Key: SettingPageSize, Value: "A4", Name: "Page Size", Icon: "FileText", Group: "PDF", DataType: "string", Content: htmlContent("Page size for the generated PDF (e.g., A4, Letter).")},
 		{Key: SettingOutputFilenameFormat, Value: "{branch_id}_{date}_{gate_id}", Name: "Filename Format", Icon: "FileCode", Group: "PDF", DataType: "string", Content: htmlContent("Template for output filenames.<br>Available variables: {branch_id}, {date}, {gate_id}")},
 		{Key: SettingTimeOverlap, Value: "00:00", Name: "Day Start Time", Icon: "Clock", Group: "Scheduling", DataType: "time", Content: htmlContent("Daily transaction window start time (HH:MM).<br>Example: 02:00 means transactions from 02:00 today to 01:59:59 tomorrow.")},

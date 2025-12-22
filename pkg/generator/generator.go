@@ -70,6 +70,12 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 		dayStartTime = dst
 	}
 
+	// Get analyzer operator name for PDF header
+	analyzerOperatorName := getSettingOrDefault(ctx, settingsRepo, domain.SettingAnalyzerOperatorName, "Analyzer Operator")
+	if aon, ok := metadata.Settings["analyzer_operator_name"]; ok && aon != "" {
+		analyzerOperatorName = aon
+	}
+
 	// Connect to Access database
 	var targetDate time.Time
 	var err error
@@ -204,7 +210,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 		),
 		row.New().Add(
 			col.New(16).Add(text.New(gateLabel, headerTextStyle)),
-			col.New(6).Add(text.New("AWM", // Removed [XXX01] to be generic
+			col.New(6).Add(text.New(analyzerOperatorName,
 				props.Text{Size: 10, Style: fontstyle.Normal, Align: align.Left, Top: 2, Bottom: 3},
 			)),
 		),
