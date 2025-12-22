@@ -68,7 +68,7 @@ func main() {
 	processService := services.NewProcessService(settingsService)
 
 	// Initialize Queue
-	taskQueue, err := queue.NewQueue(db, taskRepo, settingsRepo)
+	taskQueue, err := queue.NewQueue(db, taskRepo, settingsRepo, gateRepo)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize queue")
 	}

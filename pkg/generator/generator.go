@@ -35,7 +35,7 @@ import (
 type ProgressCallback func(stage string, current, total int)
 
 // GeneratePDFWithProgress creates a PDF from the given metadata with progress reporting
-func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository, onProgress ProgressCallback) (string, int64, error) {
+func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository, gateRepo ports.GateRepository, onProgress ProgressCallback) (string, int64, error) {
 	log.Info().Int("branch_id", metadata.BranchID).Msg("Starting PDF generation")
 
 	// Report initial progress
@@ -110,6 +110,25 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	totalTransactions := len(transactions)
 	log.Info().Int("count", totalTransactions).Msg("Loaded transactions")
 
+	// Build gate name lookup map
+	gateNameMap := make(map[int]string)
+	if gateRepo != nil {
+		gates, err := gateRepo.List(ctx)
+		if err == nil {
+			for _, g := range gates {
+				gateNameMap[g.ID] = g.Name
+			}
+		}
+	}
+
+	// Helper function to get gate name by ID
+	getGateName := func(gateID int) string {
+		if name, ok := gateNameMap[gateID]; ok {
+			return name
+		}
+		return strconv.Itoa(gateID) // Fallback to ID if name not found
+	}
+
 	if onProgress != nil {
 		onProgress("Loading fonts", 0, totalTransactions)
 	}
@@ -165,15 +184,8 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	// Header Logic adapted from deprecated
 	headerTextStyle := props.Text{Size: 11, Style: fontstyle.Bold, Align: align.Left, Top: 1}
 
-	// Determine station name for header if available, otherwise just use ID
-	stationLabel := fmt.Sprintf("GERBANG : %d", metadata.StationID)
-	// Try to find a station name from the first transaction if available
-	if len(transactions) > 0 {
-		st := transactions[0].GetStation()
-		if st != "" && st != "--" {
-			stationLabel = fmt.Sprintf("GERBANG : %s", st)
-		}
-	}
+	// Use gate name from lookup for header
+	gateLabel := fmt.Sprintf("GERBANG : %s", getGateName(metadata.GateID))
 
 	dateStr := time.Now().Format("02/01/2006 15:04:05")
 
@@ -191,7 +203,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 			)),
 		),
 		row.New().Add(
-			col.New(16).Add(text.New(stationLabel, headerTextStyle)),
+			col.New(16).Add(text.New(gateLabel, headerTextStyle)),
 			col.New(6).Add(text.New("AWM", // Removed [XXX01] to be generic
 				props.Text{Size: 10, Style: fontstyle.Normal, Align: align.Left, Top: 2, Bottom: 3},
 			)),
@@ -257,7 +269,14 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 					text.New(fmt.Sprintf(": %s", t.GetMethod()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
 					text.New(fmt.Sprintf(": %s", t.GetSerial()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
 					text.New(fmt.Sprintf(": %s", t.GetStatus()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
-					text.New(fmt.Sprintf(": %s", t.GetOriginGate()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
+					text.New(fmt.Sprintf(": %s", func() string {
+						// Look up origin gate name by ID
+						originGateStr := t.GetOriginGate()
+						if originGateID, err := strconv.Atoi(originGateStr); err == nil {
+							return getGateName(originGateID)
+						}
+						return originGateStr // Return original if not a valid number
+					}()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
 					text.New(fmt.Sprintf(": %s", t.GetCardNumber()), nextTextPropTop(valueTextStyle, textSpace, &lastSpace)),
 				),
 				firstImage,
@@ -318,8 +337,8 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 }
 
 // GeneratePDF creates a PDF from the given metadata (legacy wrapper without progress)
-func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository) (string, int64, error) {
-	return GeneratePDFWithProgress(ctx, metadata, settingsRepo, nil)
+func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository, gateRepo ports.GateRepository) (string, int64, error) {
+	return GeneratePDFWithProgress(ctx, metadata, settingsRepo, gateRepo, nil)
 }
 
 func getSettingOrDefault(ctx context.Context, repo ports.SettingsRepository, key, defaultVal string) string {
@@ -349,7 +368,7 @@ func formatFilename(format string, metadata domain.TaskMetadata) string {
 	result = strings.ReplaceAll(result, "{branch_id}", strconv.Itoa(metadata.BranchID))
 	result = strings.ReplaceAll(result, "{gate_id}", strconv.Itoa(metadata.GateID))
 	result = strings.ReplaceAll(result, "{station_id}", strconv.Itoa(metadata.StationID))
-	
+
 	// Use transaction filter date for {date}, not generation time
 	dateStr := now.Format("20060102") // Default to current date
 	if metadata.Filter.Date != "" {
@@ -364,7 +383,7 @@ func formatFilename(format string, metadata domain.TaskMetadata) string {
 		}
 	}
 	result = strings.ReplaceAll(result, "{date}", dateStr)
-	
+
 	// Keep {time} as current time for uniqueness in filenames
 	result = strings.ReplaceAll(result, "{time}", now.Format("150405"))
 	return result

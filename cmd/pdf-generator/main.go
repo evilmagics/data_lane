@@ -67,9 +67,10 @@ func (p *program) run() {
 	// Initialize Repositories
 	settingsRepo := repository.NewSettingsRepository(p.db)
 	taskRepo := repository.NewTaskRepository(p.db)
+	gateRepo := repository.NewGateRepository(p.db)
 
 	// Initialize Queue
-	q, err := queue.NewQueue(p.db, taskRepo, settingsRepo)
+	q, err := queue.NewQueue(p.db, taskRepo, settingsRepo, gateRepo)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize queue")
 		return

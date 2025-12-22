@@ -50,6 +50,18 @@ func (m *MockSettingsRepo) Get(ctx context.Context, key string) (*domain.Setting
 func (m *MockSettingsRepo) Set(ctx context.Context, setting *domain.Settings) error { return nil }
 func (m *MockSettingsRepo) GetAll(ctx context.Context) ([]domain.Settings, error) { return nil, nil }
 
+type MockGateRepo struct {
+	mock.Mock
+}
+func (m *MockGateRepo) Create(ctx context.Context, gate *domain.Gate) error { return nil }
+func (m *MockGateRepo) GetByID(ctx context.Context, id int) (*domain.Gate, error) { return nil, nil }
+func (m *MockGateRepo) Update(ctx context.Context, gate *domain.Gate) error { return nil }
+func (m *MockGateRepo) Delete(ctx context.Context, id int) error { return nil }
+func (m *MockGateRepo) List(ctx context.Context) ([]domain.Gate, error) { return nil, nil }
+func (m *MockGateRepo) BatchCreate(ctx context.Context, gates []domain.Gate) error { return nil }
+func (m *MockGateRepo) BatchUpdate(ctx context.Context, gates []domain.Gate) error { return nil }
+func (m *MockGateRepo) BatchDelete(ctx context.Context, ids []int) error { return nil }
+
 
 func TestNewQueue(t *testing.T) {
 	// Setup in-memory SQLite DB for backlite
@@ -58,11 +70,12 @@ func TestNewQueue(t *testing.T) {
 
 	taskRepo := new(MockTaskRepo)
 	settingsRepo := new(MockSettingsRepo)
+	gateRepo := new(MockGateRepo)
 
 	// Mock settings call
 	settingsRepo.On("Get", mock.Anything, domain.SettingQueueConcurrency).Return(&domain.Settings{Value: "1"}, nil).Once()
 
-	q, err := queue.NewQueue(db, taskRepo, settingsRepo)
+	q, err := queue.NewQueue(db, taskRepo, settingsRepo, gateRepo)
 	assert.NoError(t, err)
 	assert.NotNil(t, q)
 

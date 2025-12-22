@@ -37,6 +37,7 @@ type Queue struct {
 	client       *backlite.Client
 	taskRepo     ports.TaskRepository
 	settingsRepo ports.SettingsRepository
+	gateRepo     ports.GateRepository
 
 	// Progress tracking for SSE
 	progressMu sync.RWMutex
@@ -44,7 +45,7 @@ type Queue struct {
 }
 
 // NewQueue creates a new queue instance
-func NewQueue(db *gorm.DB, taskRepo ports.TaskRepository, settingsRepo ports.SettingsRepository) (*Queue, error) {
+func NewQueue(db *gorm.DB, taskRepo ports.TaskRepository, settingsRepo ports.SettingsRepository, gateRepo ports.GateRepository) (*Queue, error) {
 	// Get concurrency from settings
 	concurrency := 1
 	setting, err := settingsRepo.Get(context.Background(), domain.SettingQueueConcurrency)
@@ -80,6 +81,7 @@ func NewQueue(db *gorm.DB, taskRepo ports.TaskRepository, settingsRepo ports.Set
 		client:       client,
 		taskRepo:     taskRepo,
 		settingsRepo: settingsRepo,
+		gateRepo:     gateRepo,
 		progress:     make(map[string]*ports.TaskProgress),
 	}
 
@@ -190,7 +192,7 @@ func (q *Queue) handlePDFTask(ctx context.Context, task PDFTask) error {
 	}
 
 	// Generate PDF with progress tracking
-	output, size, err := generator.GeneratePDFWithProgress(ctx, task.Metadata, q.settingsRepo, progressCallback)
+	output, size, err := generator.GeneratePDFWithProgress(ctx, task.Metadata, q.settingsRepo, q.gateRepo, progressCallback)
 	if err != nil {
 		log.Error().Err(err).Str("task_id", task.TaskID).Msg("PDF generation failed")
 
