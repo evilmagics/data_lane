@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -149,9 +150,22 @@ func seedDefaults() error {
 			existing.Content = setting.Content
 			existing.Name = setting.Name
 			existing.Icon = setting.Icon
-			// Description was removed, so no need to clean it up manually if column dropped,
-			// though GORM AutoMigrate doesn't drop columns by default.
-			// We can leave it for now.
+
+			// Special migration: time_overlap was changed from minutes (number) to HH:MM (time)
+			// Convert old numeric value to time format
+			if setting.Key == domain.SettingTimeOverlap && setting.DataType == "time" {
+				// Check if existing value is in old format (numeric minutes)
+				if minutes, err := strconv.Atoi(existing.Value); err == nil {
+					// Convert minutes to HH:MM format
+					hours := minutes / 60
+					mins := minutes % 60
+					existing.Value = fmt.Sprintf("%02d:%02d", hours, mins)
+				} else if len(existing.Value) != 5 || existing.Value[2] != ':' {
+					// Invalid format, reset to default
+					existing.Value = setting.Value
+				}
+			}
+
 			if err := DB.Save(&existing).Error; err != nil {
 				return err
 			}
