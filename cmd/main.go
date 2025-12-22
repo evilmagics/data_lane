@@ -48,7 +48,7 @@ func main() {
 	settingsRepo := repository.NewSettingsRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
 	apiKeyRepo := repository.NewAPIKeyRepository(db)
-	stationRepo := repository.NewStationRepository(db)
+	gateRepo := repository.NewGateRepository(db)
 
 	// Dependency injection
 	sessionExpiry := 12 * time.Hour
@@ -64,7 +64,7 @@ func main() {
 	authService := services.NewAuthService(sessionRepo, settingsRepo, sessionExpiry)
 	apiKeyService := services.NewAPIKeyService(apiKeyRepo)
 	settingsService := services.NewSettingsService(settingsRepo)
-	stationService := services.NewStationService(stationRepo)
+	gateService := services.NewGateService(gateRepo)
 	processService := services.NewProcessService(settingsService)
 
 	// Initialize Queue
@@ -78,7 +78,7 @@ func main() {
 		authService,
 		apiKeyService,
 		settingsService,
-		stationService,
+		gateService,
 		processService,
 		taskRepo,
 		scheduleRepo,

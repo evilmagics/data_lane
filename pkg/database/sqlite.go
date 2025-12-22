@@ -130,7 +130,7 @@ func runMigrations() error {
 		&domain.Session{},
 		&domain.APIKey{},
 		&domain.Log{},
-		&domain.Station{},
+		&domain.Gate{},
 	)
 }
 

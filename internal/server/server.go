@@ -23,7 +23,7 @@ type Server struct {
 	authService     *services.AuthService
 	apiKeyService   *services.APIKeyService
 	settingsService *services.SettingsService
-	stationService  *services.StationService
+	gateService     *services.GateService
 	processService  *services.ProcessService
 	taskRepo        ports.TaskRepository
 	scheduleRepo    ports.ScheduleRepository
@@ -35,7 +35,7 @@ func NewServer(
 	authService *services.AuthService,
 	apiKeyService *services.APIKeyService,
 	settingsService *services.SettingsService,
-	stationService *services.StationService,
+	gateService *services.GateService,
 	processService *services.ProcessService,
 	taskRepo ports.TaskRepository,
 	scheduleRepo ports.ScheduleRepository,
@@ -55,7 +55,7 @@ func NewServer(
 		authService:     authService,
 		apiKeyService:   apiKeyService,
 		settingsService: settingsService,
-		stationService:  stationService,
+		gateService:     gateService,
 		processService:  processService,
 		taskRepo:        taskRepo,
 		scheduleRepo:    scheduleRepo,
@@ -69,7 +69,7 @@ func (s *Server) SetupRoutes() {
 	authHandler := handlers.NewAuthHandler(s.authService)
 	settingsHandler := handlers.NewSettingsHandler(s.settingsService)
 	apiKeyHandler := handlers.NewAPIKeyHandler(s.apiKeyService)
-	stationHandler := handlers.NewStationHandler(s.stationService)
+	gateHandler := handlers.NewGateHandler(s.gateService)
 	taskHandler := handlers.NewTaskHandler(s.taskRepo, s.queue)
 	scheduleHandler := handlers.NewScheduleHandler(s.scheduleRepo)
 	sseHandler := handlers.NewSSEHandler(s.taskRepo, s.queue)
@@ -98,13 +98,13 @@ func (s *Server) SetupRoutes() {
 	protected.Get("/schedules", scheduleHandler.List)
 	protected.Delete("/schedules/:id", scheduleHandler.Delete)
 
-	// Stations (Protected) - Allowing CRUD for now, maybe move write ops to Admin
-	protected.Get("/stations", stationHandler.List)
-	hmacProtected.Post("/stations", stationHandler.Create)
-	hmacProtected.Put("/stations", stationHandler.UpdateBatch)
-	hmacProtected.Put("/stations/:id", stationHandler.UpdateSingle)
-	hmacProtected.Delete("/stations", stationHandler.Delete) // Delete batch (body)
-	protected.Delete("/stations/:id", stationHandler.Delete) // Delete single (param)
+	// Gates (Protected) - Allowing CRUD for now, maybe move write ops to Admin
+	protected.Get("/gates", gateHandler.List)
+	hmacProtected.Post("/gates", gateHandler.Create)
+	hmacProtected.Put("/gates", gateHandler.UpdateBatch)
+	hmacProtected.Put("/gates/:id", gateHandler.UpdateSingle)
+	hmacProtected.Delete("/gates", gateHandler.Delete) // Delete batch (body)
+	protected.Delete("/gates/:id", gateHandler.Delete) // Delete single (param)
 
 	// SSE (Task-specific is Shared)
 	protected.Get("/sse/tasks/:id", sseHandler.TaskEvents)
