@@ -42,7 +42,8 @@ func TestHMACMiddleware(t *testing.T) {
 	// Setup Mock Service
 	mockRepo := &mockSettingsRepo{settings: make(map[string]string)}
 	settingsService := services.NewSettingsService(mockRepo)
-	// Default enabled
+	// Enable security and HMAC for testing
+	mockRepo.settings[domain.SettingSecurityEnabled] = "true"
 	mockRepo.settings["enable_hmac"] = "true"
 
 	app := fiber.New()

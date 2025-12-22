@@ -5,16 +5,25 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
+	"pdf_generator/internal/core/domain"
 	"pdf_generator/internal/core/services"
 	"pdf_generator/pkg/api"
 	"pdf_generator/pkg/utils"
 )
 
 // AuthMiddleware validates admin JWT or API key
-func AuthMiddleware(authService *services.AuthService, apiKeyService *services.APIKeyService) fiber.Handler {
+func AuthMiddleware(authService *services.AuthService, apiKeyService *services.APIKeyService, settingsService *services.SettingsService) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		// Public routes exception
 		if strings.HasSuffix(c.Path(), "/auth/login") {
+			return c.Next()
+		}
+
+		// Check if security is enabled
+		securityEnabled, _ := settingsService.Get(c.Context(), domain.SettingSecurityEnabled)
+		if securityEnabled != "true" {
+			// Security disabled - allow all requests as anonymous
+			c.Locals("auth_type", "anonymous")
 			return c.Next()
 		}
 

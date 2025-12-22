@@ -81,7 +81,7 @@ func (s *Server) SetupRoutes() {
 	api.Post("/auth/login", authHandler.Login)
 
 	// Protected routes (Admin + API Key)
-	protected := api.Group("", middleware.AuthMiddleware(s.authService, s.apiKeyService))
+	protected := api.Group("", middleware.AuthMiddleware(s.authService, s.apiKeyService, s.settingsService))
 
 	// HMAC protected routes (POST/PUT with body)
 	hmacProtected := protected.Group("", middleware.HMACMiddleware(s.settingsService))

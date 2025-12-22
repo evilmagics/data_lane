@@ -13,6 +13,7 @@ type Settings struct {
 
 // Known setting keys
 const (
+	SettingSecurityEnabled       = "security_enabled"      // Enable/disable all API security
 	SettingBranchID              = "branch_id"
 	SettingBranchName            = "branch_name"
 	SettingManagementCompany     = "management_company"
@@ -31,6 +32,7 @@ func DefaultSettings() []Settings {
 	htmlContent := func(s string) *string { return &s }
 
 	return []Settings{
+		{Key: SettingSecurityEnabled, Value: "false", Name: "Security Enabled", Icon: "Shield", Group: "Security", DataType: "boolean", Content: htmlContent("Enable API security (authentication, HMAC). When disabled, all API endpoints are publicly accessible.")},
 		{Key: SettingBranchID, Value: "001", Name: "Branch ID", Icon: "Key", Group: "General", DataType: "string", Content: htmlContent("Unique identifier for the branch.")},
 		{Key: SettingBranchName, Value: "BRANCH", Name: "Branch Name", Icon: "Building", Group: "General", DataType: "string", Content: htmlContent("Display name of the branch.")},
 		{Key: SettingManagementCompany, Value: "PT Company", Name: "Management Company", Icon: "Briefcase", Group: "General", DataType: "string", Content: htmlContent("Name of the management company.")},

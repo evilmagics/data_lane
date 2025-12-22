@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
+	"pdf_generator/internal/core/domain"
 	"pdf_generator/internal/core/services"
 	"pdf_generator/pkg/api"
 	"pdf_generator/pkg/utils"
@@ -17,6 +18,13 @@ func HMACMiddleware(settingsService *services.SettingsService) fiber.Handler {
 		// Only validate for methods with body
 		method := c.Method()
 		if method != "POST" && method != "PUT" && method != "PATCH" {
+			return c.Next()
+		}
+
+		// Check if security is enabled globally
+		securityEnabled, _ := settingsService.Get(c.Context(), domain.SettingSecurityEnabled)
+		if securityEnabled != "true" {
+			// Security disabled - skip HMAC validation
 			return c.Next()
 		}
 
