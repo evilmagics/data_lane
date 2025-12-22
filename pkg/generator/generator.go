@@ -349,7 +349,23 @@ func formatFilename(format string, metadata domain.TaskMetadata) string {
 	result = strings.ReplaceAll(result, "{branch_id}", strconv.Itoa(metadata.BranchID))
 	result = strings.ReplaceAll(result, "{gate_id}", strconv.Itoa(metadata.GateID))
 	result = strings.ReplaceAll(result, "{station_id}", strconv.Itoa(metadata.StationID))
-	result = strings.ReplaceAll(result, "{date}", now.Format("20060102"))
+	
+	// Use transaction filter date for {date}, not generation time
+	dateStr := now.Format("20060102") // Default to current date
+	if metadata.Filter.Date != "" {
+		// Parse filter date and reformat
+		if parsed, err := time.Parse("2006-01-02", metadata.Filter.Date); err == nil {
+			dateStr = parsed.Format("20060102")
+		}
+	} else if metadata.Filter.RangeStart != "" {
+		// For range mode, use the start date
+		if parsed, err := time.Parse("2006-01-02", metadata.Filter.RangeStart[:10]); err == nil {
+			dateStr = parsed.Format("20060102")
+		}
+	}
+	result = strings.ReplaceAll(result, "{date}", dateStr)
+	
+	// Keep {time} as current time for uniqueness in filenames
 	result = strings.ReplaceAll(result, "{time}", now.Format("150405"))
 	return result
 }
