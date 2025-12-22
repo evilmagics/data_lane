@@ -64,8 +64,41 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 	var args []interface{}
 
 	if filter.Date != "" {
-		query += " AND FORMAT([WAKTU], 'yyyy-MM-dd') = ?"
-		args = append(args, filter.Date)
+		// Daily mode: use DayStartTime to calculate transaction window
+		// If DayStartTime is set (e.g., "02:00"), transactions from date+02:00 to nextDay+01:59:59
+		dayStartTime := filter.DayStartTime
+		if dayStartTime == "" {
+			dayStartTime = "00:00"
+		}
+		
+		// Parse the date and day start time
+		startDateTime := filter.Date + " " + dayStartTime + ":00"
+		
+		// Calculate end time (next day at startTime - 1 second)
+		parsedDate, err := time.Parse("2006-01-02", filter.Date)
+		if err == nil {
+			nextDay := parsedDate.AddDate(0, 0, 1)
+			endDateTime := nextDay.Format("2006-01-02") + " " + dayStartTime + ":00"
+			
+			// Parse start and end times, then subtract 1 second from end
+			startTime, _ := time.Parse("2006-01-02 15:04:05", startDateTime)
+			endTime, _ := time.Parse("2006-01-02 15:04:05", endDateTime)
+			endTime = endTime.Add(-time.Second)
+			
+			query += " AND [WAKTU] >= ? AND [WAKTU] <= ?"
+			args = append(args, startTime.Format("2006-01-02 15:04:05"), endTime.Format("2006-01-02 15:04:05"))
+			
+			log.Debug().
+				Str("date", filter.Date).
+				Str("day_start_time", dayStartTime).
+				Str("window_start", startTime.Format("2006-01-02 15:04:05")).
+				Str("window_end", endTime.Format("2006-01-02 15:04:05")).
+				Msg("Daily transaction window calculated")
+		} else {
+			// Fallback to simple date match if parsing fails
+			query += " AND FORMAT([WAKTU], 'yyyy-MM-dd') = ?"
+			args = append(args, filter.Date)
+		}
 	} else if filter.RangeStart != "" && filter.RangeEnd != "" {
 		query += " AND [WAKTU] BETWEEN ? AND ?"
 		args = append(args, filter.RangeStart, filter.RangeEnd)

@@ -64,6 +64,12 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 		filenameFormat = ff
 	}
 
+	// Get day start time for daily transaction window
+	dayStartTime := getSettingOrDefault(ctx, settingsRepo, domain.SettingTimeOverlap, "00:00")
+	if dst, ok := metadata.Settings["day_start_time"]; ok && dst != "" {
+		dayStartTime = dst
+	}
+
 	// Connect to Access database
 	var targetDate time.Time
 	var err error
@@ -88,7 +94,14 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.StationID))
 	log.Debug().Str("db_path", dbPath).Msg("Using database path")
 	dbPath = filepath.FromSlash(dbPath) // Ensure correct separators for Windows
-	transactions, err := datasource.LoadTransactions(ctx, dbPath, metadata.Filter)
+
+	// Populate DayStartTime in filter for daily queries
+	filter := metadata.Filter
+	if filter.Date != "" && filter.DayStartTime == "" {
+		filter.DayStartTime = dayStartTime
+	}
+
+	transactions, err := datasource.LoadTransactions(ctx, dbPath, filter)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load transactions")
 		return "", 0, err

@@ -38,7 +38,7 @@ func DefaultSettings() []Settings {
 		{Key: SettingManagementCompany, Value: "PT Company", Name: "Management Company", Icon: "Briefcase", Group: "General", DataType: "string", Content: htmlContent("Name of the management company.")},
 		{Key: SettingPageSize, Value: "A4", Name: "Page Size", Icon: "FileText", Group: "PDF", DataType: "string", Content: htmlContent("Page size for the generated PDF (e.g., A4, Letter).")},
 		{Key: SettingOutputFilenameFormat, Value: "{branch_id}_{date}_{gate_id}", Name: "Filename Format", Icon: "FileCode", Group: "PDF", DataType: "string", Content: htmlContent("Template for output filenames.<br>Available variables: {branch_id}, {date}, {gate_id}")},
-		{Key: SettingTimeOverlap, Value: "0", Name: "Time Overlap", Icon: "Clock", Group: "Scheduling", DataType: "number", Content: htmlContent("Overlap time in minutes for scheduled tasks.")},
+		{Key: SettingTimeOverlap, Value: "00:00", Name: "Day Start Time", Icon: "Clock", Group: "Scheduling", DataType: "time", Content: htmlContent("Daily transaction window start time (HH:MM).<br>Example: 02:00 means transactions from 02:00 today to 01:59:59 tomorrow.")},
 		{Key: SettingMaxOutputAgeDays, Value: "7", Name: "Max Output Age", Icon: "Trash2", Group: "Maintenance", DataType: "number", Content: htmlContent("Days to keep generated files before auto-deletion.")},
 		{Key: SettingMaxConcurrentSessions, Value: "5", Name: "Max Sessions", Icon: "Users", Group: "Security", DataType: "number", Content: htmlContent("Maximum number of concurrent admin sessions allowed.")},
 		{Key: SettingQueueConcurrency, Value: "1", Name: "Queue Concurrency", Icon: "Layers", Group: "System", DataType: "number", Content: htmlContent("Number of background workers processing the queue.")},

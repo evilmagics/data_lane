@@ -64,9 +64,10 @@ type TaskMetadata struct {
 // TaskFilter contains date and transaction filtering options
 // Date mode is auto-detected: if Date is set, use daily mode; if RangeStart/RangeEnd set, use range mode
 type TaskFilter struct {
-	Date              string `json:"date,omitempty"`               // Single date (YYYY-MM-DD)
-	RangeStart        string `json:"range_start,omitempty"`        // Range start date
-	RangeEnd          string `json:"range_end,omitempty"`          // Range end date
-	TransactionStatus string `json:"transaction_status,omitempty"` // Filter by status
-	Limit             int    `json:"limit,omitempty"`              // Max transactions to fetch, 0 = unlimited
+	Date              string `json:"date,omitempty"`                // Single date (YYYY-MM-DD)
+	DayStartTime      string `json:"day_start_time,omitempty"`      // Daily window start time (HH:MM), from settings
+	RangeStart        string `json:"range_start,omitempty"`         // Range start datetime
+	RangeEnd          string `json:"range_end,omitempty"`           // Range end datetime
+	TransactionStatus string `json:"transaction_status,omitempty"`  // Filter by status
+	Limit             int    `json:"limit,omitempty"`               // Max transactions to fetch, 0 = unlimited
 }
