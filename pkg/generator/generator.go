@@ -347,6 +347,99 @@ func GeneratePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo
 	return GeneratePDFWithProgress(ctx, metadata, settingsRepo, gateRepo, nil)
 }
 
+// GenerateMultiDatePDF handles date range generation, producing one PDF per date
+// Returns comma-separated output paths and total size across all files
+func GenerateMultiDatePDF(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository, gateRepo ports.GateRepository, onProgress ProgressCallback) (string, int64, error) {
+	// Check if this is a date range request
+	if metadata.Filter.RangeStart == "" || metadata.Filter.RangeEnd == "" {
+		// Single date mode - use existing generator
+		return GeneratePDFWithProgress(ctx, metadata, settingsRepo, gateRepo, onProgress)
+	}
+
+	// Parse date range
+	startDate, err := time.Parse("2006-01-02", metadata.Filter.RangeStart)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid range_start date: %w", err)
+	}
+	endDate, err := time.Parse("2006-01-02", metadata.Filter.RangeEnd)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid range_end date: %w", err)
+	}
+
+	// Calculate number of days
+	days := int(endDate.Sub(startDate).Hours()/24) + 1
+	if days <= 0 {
+		return "", 0, fmt.Errorf("invalid date range: end date must be after start date")
+	}
+
+	log.Info().
+		Str("range_start", metadata.Filter.RangeStart).
+		Str("range_end", metadata.Filter.RangeEnd).
+		Int("days", days).
+		Msg("Starting multi-date PDF generation")
+
+	if onProgress != nil {
+		onProgress(fmt.Sprintf("Processing date range: %d days", days), 0, days)
+	}
+
+	var outputPaths []string
+	var totalSize int64
+
+	// Iterate through each date
+	for i := 0; i < days; i++ {
+		currentDate := startDate.AddDate(0, 0, i)
+		dateStr := currentDate.Format("2006-01-02")
+
+		if onProgress != nil {
+			onProgress(fmt.Sprintf("Processing date %d of %d: %s", i+1, days, dateStr), i, days)
+		}
+
+		// Create a copy of metadata with single date filter
+		singleDayMetadata := metadata
+		singleDayMetadata.Filter = domain.TaskFilter{
+			Date:              dateStr,
+			DayStartTime:      metadata.Filter.DayStartTime,
+			TransactionStatus: metadata.Filter.TransactionStatus,
+			Limit:             metadata.Filter.Limit,
+		}
+
+		// Create per-date progress callback that prefixes with date info
+		perDateProgress := func(stage string, current, total int) {
+			if onProgress != nil {
+				prefixedStage := fmt.Sprintf("[%s] %s", dateStr, stage)
+				onProgress(prefixedStage, current, total)
+			}
+		}
+
+		// Generate PDF for this single date
+		output, size, err := GeneratePDFWithProgress(ctx, singleDayMetadata, settingsRepo, gateRepo, perDateProgress)
+		if err != nil {
+			log.Warn().Err(err).Str("date", dateStr).Msg("Failed to generate PDF for date, skipping")
+			continue // Skip failed dates but continue with others
+		}
+
+		outputPaths = append(outputPaths, output)
+		totalSize += size
+
+		log.Info().
+			Str("date", dateStr).
+			Str("output", output).
+			Int64("size", size).
+			Msg("Generated PDF for date")
+	}
+
+	if len(outputPaths) == 0 {
+		return "", 0, fmt.Errorf("no PDFs were generated for the date range")
+	}
+
+	if onProgress != nil {
+		onProgress(fmt.Sprintf("Completed: %d PDFs generated", len(outputPaths)), days, days)
+	}
+
+	// Return comma-separated paths for multiple files
+	return strings.Join(outputPaths, ","), totalSize, nil
+}
+
 func getSettingOrDefault(ctx context.Context, repo ports.SettingsRepository, key, defaultVal string) string {
 	setting, err := repo.Get(ctx, key)
 	if err != nil || setting == nil {

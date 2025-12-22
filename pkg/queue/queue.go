@@ -191,8 +191,9 @@ func (q *Queue) handlePDFTask(ctx context.Context, task PDFTask) error {
 		}
 	}
 
-	// Generate PDF with progress tracking
-	output, size, err := generator.GeneratePDFWithProgress(ctx, task.Metadata, q.settingsRepo, q.gateRepo, progressCallback)
+	// Generate PDF(s) with progress tracking
+	// Uses GenerateMultiDatePDF which handles both single-date and date-range scenarios
+	output, size, err := generator.GenerateMultiDatePDF(ctx, task.Metadata, q.settingsRepo, q.gateRepo, progressCallback)
 	if err != nil {
 		log.Error().Err(err).Str("task_id", task.TaskID).Msg("PDF generation failed")
 
