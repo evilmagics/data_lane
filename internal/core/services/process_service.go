@@ -21,7 +21,7 @@ type ProcessService struct {
 
 func NewProcessService(settingsService *SettingsService) *ProcessService {
 	// Determine binary name based on OS
-	binaryName := "datalane_pdf_gen"
+	binaryName := "datalane_gen_pdf"
 	if runtime.GOOS == "windows" {
 		binaryName += ".exe"
 	}
