@@ -25,12 +25,6 @@ func InitDB(dbPath string) error {
 		dbPath = DefaultDBPath
 	}
 
-	// Ensure the data directory exists
-	dir := "data"
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create data directory: %w", err)
-	}
-
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{

@@ -22,6 +22,9 @@ func main() {
 		log.Warn().Msg(".env file not found, using environment variables")
 	}
 
+	// Ensure required directories exist
+	ensureDirectories()
+
 	// Initialize logger
 	if err := logger.InitLogger("logs"); err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize logger")
@@ -121,4 +124,15 @@ func getServerAddress() string {
 	}
 
 	return serverURL
+}
+
+// ensureDirectories creates required application directories if they don't exist.
+// Called once at startup before any other initialization.
+func ensureDirectories() {
+	dirs := []string{"data", "output", "logs"}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			log.Fatal().Err(err).Str("dir", dir).Msg("Failed to create directory")
+		}
+	}
 }

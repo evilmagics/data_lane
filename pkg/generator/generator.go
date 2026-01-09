@@ -31,6 +31,9 @@ import (
 	"pdf_generator/pkg/datasource"
 )
 
+// DefaultOutputDir is the default directory for PDF output files
+const DefaultOutputDir = "output"
+
 // ProgressCallback is called to report generation progress
 type ProgressCallback func(stage string, current, total int)
 
@@ -304,15 +307,12 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	filename := formatFilename(filenameFormat, metadata)
 
 	// Get absolute path for output directory
-	outputDir, err := filepath.Abs("output")
+	outputDir, err := filepath.Abs(DefaultOutputDir)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to get absolute output path: %w", err)
 	}
 
 	outputPath := filepath.Join(outputDir, filename+".pdf")
-
-	// Ensure output directory exists
-	os.MkdirAll(outputDir, 0755)
 
 	// Generate document
 	doc, err := m.Generate()
