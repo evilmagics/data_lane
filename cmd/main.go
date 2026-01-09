@@ -30,12 +30,8 @@ func main() {
 
 	log.Info().Msg("Starting PDF Generator Application")
 
-	// Initialize database
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "data/app.db"
-	}
-	if err := database.InitDB(dbPath); err != nil {
+	// Initialize database (uses default path: data/app.db)
+	if err := database.InitDB(""); err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
 	}
 	log.Info().Msg("Database initialized")

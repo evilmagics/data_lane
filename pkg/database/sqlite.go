@@ -16,13 +16,19 @@ import (
 
 var DB *gorm.DB
 
+// DefaultDBPath is the default database path
+const DefaultDBPath = "data/app.db"
+
 // InitDB initializes the SQLite database connection and runs migrations
 func InitDB(dbPath string) error {
 	if dbPath == "" {
-		dbPath = os.Getenv("DB_PATH")
-		if dbPath == "" {
-			dbPath = "app.db"
-		}
+		dbPath = DefaultDBPath
+	}
+
+	// Ensure the data directory exists
+	dir := "data"
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
 	newLogger := logger.New(
