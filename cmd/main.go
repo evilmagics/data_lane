@@ -93,11 +93,11 @@ func main() {
 
 // getServerAddress returns the server address from SERVER_URL env variable.
 // Supports formats: "host:port", "http://host:port", or ":port"
-// Default: "localhost:3000"
+// Default: "localhost:3110"
 func getServerAddress() string {
 	serverURL := os.Getenv("SERVER_URL")
 	if serverURL == "" {
-		return "localhost:3000"
+		return "localhost:3110"
 	}
 
 	// If it looks like a URL with scheme, parse it
