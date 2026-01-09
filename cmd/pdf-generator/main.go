@@ -48,17 +48,13 @@ func (p *program) run() {
 	// Initialize Logger
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 
-	// Initialize Database
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "data/app.db"
+	// Initialize Database (uses default path: data/app.db)
+	// Ensure directories exist first
+	for _, dir := range []string{"data", "output", "logs"} {
+		os.MkdirAll(dir, 0755)
 	}
-	log.Info().Str("db_path", dbPath).Msg("Using database path")
-	// Also ensure data dir exists if path contains directory separator?
-	// InitDB handles opening, but maybe ensure directory?
-	// InitDB likely handles it or sqlite driver errors.
 
-	if err := database.InitDB(dbPath); err != nil {
+	if err := database.InitDB(""); err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect to database")
 		return
 	}

@@ -100,12 +100,12 @@ else
 fi
 
 # Build Worker Service
-echo "   Building PDF Worker (pdf-generator)..."
-go build -o $OUTPUT_DIR/pdf-generator$EXT ./cmd/pdf-generator/main.go
+echo "   Building PDF Worker (datalane_pdf_gen)..."
+go build -o $OUTPUT_DIR/datalane_pdf_gen$EXT ./cmd/pdf-generator/main.go
 if [ $? -eq 0 ]; then
-    echo "   ✅ pdf-generator$EXT"
+    echo "   ✅ datalane_pdf_gen$EXT"
 else
-    echo "   ❌ Failed to build pdf-generator"
+    echo "   ❌ Failed to build datalane_pdf_gen"
     exit 1
 fi
 
@@ -116,4 +116,4 @@ echo "========================================"
 echo ""
 echo "Output files:"
 echo "  - $OUTPUT_DIR/datalane$EXT"
-echo "  - $OUTPUT_DIR/pdf-generator$EXT"
+echo "  - $OUTPUT_DIR/datalane_pdf_gen$EXT"

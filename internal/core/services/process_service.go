@@ -21,7 +21,7 @@ type ProcessService struct {
 
 func NewProcessService(settingsService *SettingsService) *ProcessService {
 	// Determine binary name based on OS
-	binaryName := "pdf-generator"
+	binaryName := "datalane_pdf_gen"
 	if runtime.GOOS == "windows" {
 		binaryName += ".exe"
 	}
@@ -57,7 +57,7 @@ func NewProcessService(settingsService *SettingsService) *ProcessService {
 		// Note: kardianos/service usually invokes the binary with no args or specific platform args.
 		// If we set Arguments, they are passed.
 		// Our pdf-generator main parses flags. But service.Run() handles the rest.
-		// To be safe, we usually don't need args if it detects it's a service, 
+		// To be safe, we usually don't need args if it detects it's a service,
 		// but checking main.go: `svcFlag := flag.String("service", "", ...)`
 		// If we don't pass -service, it enters `s.Run()`.
 		// If `s.Run()` is called interactively, it tries to run.
@@ -73,48 +73,48 @@ func NewProcessService(settingsService *SettingsService) *ProcessService {
 }
 
 func (s *ProcessService) getService() (service.Service, error) {
-    // We pass nil as the program because we are only controlling it, not running it here
-    return service.New(nil, s.serviceConfig)
+	// We pass nil as the program because we are only controlling it, not running it here
+	return service.New(nil, s.serviceConfig)
 }
 
 func (s *ProcessService) Start(ctx context.Context) error {
-    svc, err := s.getService()
-    if err != nil {
-        return err
-    }
-    return svc.Start()
+	svc, err := s.getService()
+	if err != nil {
+		return err
+	}
+	return svc.Start()
 }
 
 func (s *ProcessService) Stop(ctx context.Context) error {
-    svc, err := s.getService()
-    if err != nil {
-        return err
-    }
-    return svc.Stop()
+	svc, err := s.getService()
+	if err != nil {
+		return err
+	}
+	return svc.Stop()
 }
 
 func (s *ProcessService) Restart(ctx context.Context) error {
-    svc, err := s.getService()
-    if err != nil {
-        return err
-    }
-    return svc.Restart()
+	svc, err := s.getService()
+	if err != nil {
+		return err
+	}
+	return svc.Restart()
 }
 
 func (s *ProcessService) Install(ctx context.Context) error {
-    svc, err := s.getService()
-    if err != nil {
-        return err
-    }
-    return svc.Install()
+	svc, err := s.getService()
+	if err != nil {
+		return err
+	}
+	return svc.Install()
 }
 
 func (s *ProcessService) Uninstall(ctx context.Context) error {
-    svc, err := s.getService()
-    if err != nil {
-        return err
-    }
-    return svc.Uninstall()
+	svc, err := s.getService()
+	if err != nil {
+		return err
+	}
+	return svc.Uninstall()
 }
 
 // EnsureRunning checks if the service is installed and running, installing and starting it if necessary.
@@ -139,5 +139,3 @@ func (s *ProcessService) EnsureRunning(ctx context.Context) error {
 	log.Info().Msg("Starting service...")
 	return s.Start(ctx)
 }
-
-
