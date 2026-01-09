@@ -74,8 +74,31 @@ echo "📦 Copying UI assets to embed directory..."
 # Clean existing dist
 rm -rf internal/assets/dist/*
 
-# Copy new dist
-cp -r ui/dist/* internal/assets/dist/
+# Copy only necessary static export files
+# - HTML files (static pages)
+# - _next folder (JS/CSS bundles)
+# - Public assets (images, icons)
+cd ui/dist
+
+# Copy HTML files
+find . -maxdepth 1 -name "*.html" -exec cp {} ../../internal/assets/dist/ \;
+
+# Copy _next folder (static assets)
+if [ -d "_next" ]; then
+    cp -r _next ../../internal/assets/dist/
+fi
+
+# Copy public assets (svg, ico, png, jpg)
+find . -maxdepth 1 \( -name "*.svg" -o -name "*.ico" -o -name "*.png" -o -name "*.jpg" \) -exec cp {} ../../internal/assets/dist/ \; 2>/dev/null || true
+
+# Copy subdirectories that contain HTML (route pages)
+for dir in */; do
+    if [ -f "${dir}index.html" ] || find "$dir" -maxdepth 1 -name "*.html" -quit 2>/dev/null | grep -q .; then
+        cp -r "$dir" ../../internal/assets/dist/
+    fi
+done
+
+cd ../..
 
 echo "✅ UI assets copied to internal/assets/dist/"
 echo ""
