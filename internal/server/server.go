@@ -152,23 +152,51 @@ func (s *Server) SetupRoutes() {
 		return c.SendString(js)
 	})
 
-	// Serve the static files
+	// Serve the static files (for _next, assets, etc.)
 	s.app.Use("/", static.New("", static.Config{
 		FS:     assetFS,
 		Browse: false,
 	}))
 
-	// fallback for SPA
+	// HTML route handler for SPA with static export
 	s.app.Get("*", func(c fiber.Ctx) error {
 		path := c.Path()
-		// Avoid intercepting API calls if they fall through (e.g. 404s)
+
+		// Skip API and SSE routes
 		if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/sse") {
 			return c.Next()
 		}
 
-		f, err := assetFS.Open("index.html")
+		// Try to serve the correct HTML file for the route
+		// 1. Try {path}.html (e.g., /dashboard -> dashboard.html)
+		// 2. Try {path}/index.html
+		// 3. Fall back to index.html
+
+		var htmlPath string
+		if path == "/" {
+			htmlPath = "index.html"
+		} else {
+			// Remove leading slash and try as .html file
+			cleanPath := strings.TrimPrefix(path, "/")
+			htmlPath = cleanPath + ".html"
+		}
+
+		// Try to open the specific HTML file
+		f, err := assetFS.Open(htmlPath)
 		if err != nil {
-			return c.SendStatus(404)
+			// Try index.html in subdirectory
+			if path != "/" {
+				cleanPath := strings.TrimPrefix(path, "/")
+				f, err = assetFS.Open(cleanPath + "/index.html")
+			}
+		}
+
+		// Final fallback to root index.html
+		if err != nil {
+			f, err = assetFS.Open("index.html")
+			if err != nil {
+				return c.SendStatus(404)
+			}
 		}
 
 		c.Set("Content-Type", "text/html")
