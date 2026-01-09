@@ -82,14 +82,43 @@ func main() {
 	)
 	srv.SetupRoutes()
 
-	// Get server URL from environment
-	serverUrl := os.Getenv("SERVER_URL")
-	if serverUrl == "" {
-		serverUrl = "http://localhost:3000"
-	}
+	// Get server address from environment
+	serverAddr := getServerAddress()
 
-	log.Info().Str("serverUrl", serverUrl).Msg("Starting HTTP server")
-	if err := srv.Start(serverUrl); err != nil {
+	log.Info().Str("address", serverAddr).Msg("Starting HTTP server")
+	if err := srv.Start(serverAddr); err != nil {
 		log.Fatal().Err(err).Msg("Server failed")
 	}
+}
+
+// getServerAddress returns the server address from SERVER_URL env variable.
+// Supports formats: "host:port", "http://host:port", or ":port"
+// Default: "localhost:3000"
+func getServerAddress() string {
+	serverURL := os.Getenv("SERVER_URL")
+	if serverURL == "" {
+		return "localhost:3000"
+	}
+
+	// If it looks like a URL with scheme, parse it
+	if len(serverURL) > 7 && (serverURL[:7] == "http://" || serverURL[:8] == "https://") {
+		// Extract host:port from URL
+		start := 7
+		if serverURL[:8] == "https://" {
+			start = 8
+		}
+		hostPort := serverURL[start:]
+		// Remove any path
+		if idx := len(hostPort); idx > 0 {
+			for i, c := range hostPort {
+				if c == '/' {
+					hostPort = hostPort[:i]
+					break
+				}
+			}
+		}
+		return hostPort
+	}
+
+	return serverURL
 }
