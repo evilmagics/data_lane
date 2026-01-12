@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 
 	"pdf_generator/internal/core/domain"
+	"pdf_generator/internal/core/ports"
 	"pdf_generator/internal/core/services"
 	"pdf_generator/pkg/api"
 )
@@ -21,11 +22,50 @@ func NewGateHandler(service *services.GateService) *GateHandler {
 
 // List handles GET /gates
 func (h *GateHandler) List(c fiber.Ctx) error {
-	gates, err := h.service.List(c.Context())
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "1000")) // Default to 1000 (all) for backward compat if limit not provided
+    q := c.Query("q")
+    
+    // Check for ID filter
+    var ids []int
+    if idStr := c.Query("id"); idStr != "" {
+        if id, err := strconv.Atoi(idStr); err == nil {
+             ids = append(ids, id)
+        }
+    }
+
+    if limit > 1000 {
+        limit = 1000
+    }
+
+    filter := ports.GateFilter{
+		Page:  page,
+		Limit: limit,
+        Query: q,
+        IDs:   ids,
+	}
+
+	gates, total, err := h.service.List(c.Context(), filter)
 	if err != nil {
 		return api.Error(c, api.CodeInternalError, "Failed to fetch gates")
 	}
-	return api.Success(c, fiber.Map{"gates": gates})
+
+    totalPages := int(total) / limit
+	if limit > 0 && int(total)%limit > 0 {
+		totalPages++
+	} else if limit == 0 {
+        totalPages = 1
+    }
+
+	return api.Success(c, api.PaginatedResponse{
+		Items: gates,
+		Pagination: api.Pagination{
+			Total:      total,
+			Page:       page,
+			Limit:      limit,
+			TotalPages: totalPages,
+		},
+	})
 }
 
 // Create handles POST /gates (Single or Batch)

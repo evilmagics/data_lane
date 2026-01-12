@@ -78,13 +78,21 @@ type LogRepository interface {
 }
 
 
+// GateFilter for listing gates
+type GateFilter struct {
+	Query string
+	Page  int
+	Limit int
+    IDs   []int
+}
+
 // GateRepository defines the interface for gate data access
 type GateRepository interface {
 	Create(ctx context.Context, gate *domain.Gate) error
 	GetByID(ctx context.Context, id int) (*domain.Gate, error)
 	Update(ctx context.Context, gate *domain.Gate) error
 	Delete(ctx context.Context, id int) error
-	List(ctx context.Context) ([]domain.Gate, error)
+	List(ctx context.Context, filter GateFilter) ([]domain.Gate, int64, error)
 	BatchCreate(ctx context.Context, gates []domain.Gate) error
 	BatchUpdate(ctx context.Context, gates []domain.Gate) error
 	BatchDelete(ctx context.Context, ids []int) error

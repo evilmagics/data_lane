@@ -23,8 +23,8 @@ func (s *GateService) CreateBatch(ctx context.Context, gates []domain.Gate) erro
 	return s.repo.BatchCreate(ctx, gates)
 }
 
-func (s *GateService) List(ctx context.Context) ([]domain.Gate, error) {
-	return s.repo.List(ctx)
+func (s *GateService) List(ctx context.Context, filter ports.GateFilter) ([]domain.Gate, int64, error) {
+	return s.repo.List(ctx, filter)
 }
 
 func (s *GateService) GetByID(ctx context.Context, id int) (*domain.Gate, error) {
