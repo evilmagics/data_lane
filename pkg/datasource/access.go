@@ -312,10 +312,11 @@ func TranslateTransactionMethod(method string) string {
 }
 
 // GetDataSourcePath constructs the path to the Access database file using a format template
-func GetDataSourcePath(format string, rootFolder string, transactionTime time.Time, branchID int, stationID int) string {
+func GetDataSourcePath(format string, rootFolder string, transactionTime time.Time, branchID int, gateID int, stationID int) string {
 	path := utils.FormatPath(format, utils.PathParams{
 		Time:      transactionTime,
 		BranchID:  branchID,
+		GateID:    gateID,
 		StationID: stationID,
 	})
 

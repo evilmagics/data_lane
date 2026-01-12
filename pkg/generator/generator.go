@@ -40,7 +40,7 @@ type ProgressCallback func(stage string, current, total int)
 
 // GeneratePDFWithProgress creates a PDF from the given metadata with progress reporting
 func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository, gateRepo ports.GateRepository, onProgress ProgressCallback) (string, int64, error) {
-	log.Info().Int("branch_id", metadata.BranchID).Int("station_id", metadata.StationID).Msg("Starting PDF generation")
+	log.Info().Int("branch_id", metadata.BranchID).Int("gate_id", metadata.GateID).Int("station_id", metadata.StationID).Msg("Starting PDF generation")
 
 	// Report initial progress
 	if onProgress != nil {
@@ -103,7 +103,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 		onProgress("Connecting to database", 0, 0)
 	}
 
-	dbPath := datasource.GetDataSourcePath(datasourceFormat, metadata.RootFolder, targetDate, metadata.BranchID, metadata.StationID)
+	dbPath := datasource.GetDataSourcePath(datasourceFormat, metadata.RootFolder, targetDate, metadata.BranchID, metadata.GateID, metadata.StationID)
 	dbPath = filepath.FromSlash(dbPath) // Ensure correct separators for Windows
 
 	// Check datasource from filepath while running the task
@@ -485,6 +485,7 @@ func formatFilename(format string, metadata domain.TaskMetadata) string {
 	return utils.FormatPath(format, utils.PathParams{
 		Time:      targetDate,
 		BranchID:  metadata.BranchID,
+		GateID:    metadata.GateID,
 		StationID: metadata.StationID,
 	})
 }

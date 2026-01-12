@@ -37,6 +37,7 @@ func NewTaskHandler(taskRepo ports.TaskRepository, settingsRepo ports.SettingsRe
 type EnqueueRequest struct {
 	RootFolder string            `json:"root_folder"`
 	BranchID   int               `json:"branch_id"`
+	GateID     int               `json:"gate_id"`
 	StationID  int               `json:"station_id"`
 	Filter     domain.TaskFilter `json:"filter"`
 	Settings   map[string]string `json:"settings"`
@@ -149,6 +150,9 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 	if req.BranchID < 0 || req.BranchID > 100 {
 		return api.Error(c, api.CodeValidationError, "Branch ID must be between 0 and 100")
 	}
+	if req.GateID < 0 || req.GateID > 100 {
+		return api.Error(c, api.CodeValidationError, "Gate ID must be between 0 and 100")
+	}
 	if req.StationID < 0 || req.StationID > 100 {
 		return api.Error(c, api.CodeValidationError, "Station ID must be between 0 and 100")
 	}
@@ -177,7 +181,7 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 		datasourceFormat = setting.Value
 	}
 
-	dbPath := datasource.GetDataSourcePath(datasourceFormat, normalizedRoot, targetDate, req.BranchID, req.StationID)
+	dbPath := datasource.GetDataSourcePath(datasourceFormat, normalizedRoot, targetDate, req.BranchID, req.GateID, req.StationID)
 	dbPath = filepath.FromSlash(dbPath)
 	if _, err := os.Stat(dbPath); err != nil {
 		log.Info().Str("path", dbPath).Msg("Datasource file not found while adding new task")
@@ -189,6 +193,7 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 	metadata := domain.TaskMetadata{
 		RootFolder: normalizedRoot,
 		BranchID:   req.BranchID,
+		GateID:     req.GateID,
 		StationID:  req.StationID,
 		Filter:     req.Filter,
 		Settings:   req.Settings,
@@ -199,6 +204,7 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 	task := &domain.Task{
 		Status:       domain.TaskStatusQueued,
 		RootFolder:   normalizedRoot,
+		GateID:       req.GateID,
 		StationID:    req.StationID,
 		FilterJSON:   string(filterJSON),
 		SettingsJSON: string(settingsJSON),
