@@ -22,11 +22,13 @@ type TaskRepository interface {
 
 // TaskFilter for listing tasks
 type TaskFilter struct {
-	Status   string
-	FromDate string
-	ToDate   string
-	Page     int
-	Limit    int
+	Status    string
+	FromDate  string
+	ToDate    string
+	GateID    *int
+	StationID *int
+	Page      int
+	Limit     int
 }
 
 // ScheduleRepository defines the interface for schedule data access

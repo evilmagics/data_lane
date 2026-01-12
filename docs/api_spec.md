@@ -137,13 +137,15 @@ The embedded UI requires `/config.js` to be loaded to provision runtime configur
 **Access**: Shared
 
 **Query Parameters**:
-| Param    | Type   | Default | Description              |
-| -------- | ------ | ------- | ------------------------ |
-| `page`   | int    | 1       | Page number              |
-| `limit`  | int    | 10      | Items per page (max 100) |
-| `status` | string | -       | Filter by status         |
-| `from`   | date   | -       | Filter from date         |
-| `to`     | date   | -       | Filter to date           |
+| Param        | Type   | Default | Description              |
+| ------------ | ------ | ------- | ------------------------ |
+| `page`       | int    | 1       | Page number              |
+| `limit`      | int    | 10      | Items per page (max 100) |
+| `status`     | string | -       | Filter by status         |
+| `from`       | date   | -       | Filter from date         |
+| `to`         | date   | -       | Filter to date           |
+| `gate_id`    | int    | -       | Filter by Gate ID        |
+| `station_id` | int    | -       | Filter by Station ID     |
 
 **Response** (`data`):
 ```json

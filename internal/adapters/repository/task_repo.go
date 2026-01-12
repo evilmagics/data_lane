@@ -70,6 +70,12 @@ func (r *taskRepository) List(ctx context.Context, filter ports.TaskFilter) ([]d
 	if filter.ToDate != "" {
 		query = query.Where("created_at <= ?", filter.ToDate)
 	}
+	if filter.GateID != nil {
+		query = query.Where("gate_id = ?", *filter.GateID)
+	}
+	if filter.StationID != nil {
+		query = query.Where("station_id = ?", *filter.StationID)
+	}
 
 	query.Count(&total)
 

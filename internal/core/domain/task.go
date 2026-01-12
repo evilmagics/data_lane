@@ -29,6 +29,7 @@ type Task struct {
 
 	// Extracted metadata fields
 	RootFolder   string `gorm:"type:text" json:"root_folder"`
+	BranchID     int    `gorm:"type:integer" json:"branch_id"`
 	GateID       int    `gorm:"type:integer" json:"gate_id"`
 	StationID    int    `gorm:"type:integer" json:"station_id"`
 	FilterJSON   string `gorm:"type:text" json:"filter_json"`   // JSON string of TaskFilter

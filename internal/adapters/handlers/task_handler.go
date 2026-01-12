@@ -51,12 +51,28 @@ func (h *TaskHandler) List(c fiber.Ctx) error {
 		limit = 100
 	}
 
+	var gateID *int
+	if sid := c.Query("gate_id"); sid != "" {
+		if id, err := strconv.Atoi(sid); err == nil {
+			gateID = &id
+		}
+	}
+
+	var stationID *int
+	if sid := c.Query("station_id"); sid != "" {
+		if id, err := strconv.Atoi(sid); err == nil {
+			stationID = &id
+		}
+	}
+
 	filter := ports.TaskFilter{
-		Status:   c.Query("status"),
-		FromDate: c.Query("from"),
-		ToDate:   c.Query("to"),
-		Page:     page,
-		Limit:    limit,
+		Status:    c.Query("status"),
+		FromDate:  c.Query("from"),
+		ToDate:    c.Query("to"),
+		GateID:    gateID,
+		StationID: stationID,
+		Page:      page,
+		Limit:     limit,
 	}
 
 	tasks, total, err := h.taskRepo.List(c.Context(), filter)
@@ -204,6 +220,7 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 	task := &domain.Task{
 		Status:       domain.TaskStatusQueued,
 		RootFolder:   normalizedRoot,
+		BranchID:     req.BranchID,
 		GateID:       req.GateID,
 		StationID:    req.StationID,
 		FilterJSON:   string(filterJSON),
