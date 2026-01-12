@@ -62,6 +62,7 @@ func FormatPath(template string, params PathParams) string {
 	result = strings.ReplaceAll(result, "{station_id}", stationIDStr)
 	result = strings.ReplaceAll(result, "{gate_id}", gateIDStr)
 	result = strings.ReplaceAll(result, "{date}", params.Time.Format("20060102"))
+	result = strings.ReplaceAll(result, "{DATE}", params.Time.Format("20060102"))
 	result = strings.ReplaceAll(result, "{time}", params.Time.Format("150405"))
 
 	return result

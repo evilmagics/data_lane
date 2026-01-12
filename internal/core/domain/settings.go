@@ -43,8 +43,8 @@ func DefaultSettings() []Settings {
 
 		// PDF (200)
 		{SortOrder: 210, Key: SettingPageSize, Value: "A4", Name: "Page Size", Icon: "FileText", Group: "PDF", DataType: "string", Content: htmlContent("Page size for the generated PDF (e.g., A4, Letter).")},
-		{SortOrder: 220, Key: SettingOutputFilenameFormat, Value: "{branch_id}_{date}_{gate_id}", Name: "Filename Format", Icon: "FileCode", Group: "PDF", DataType: "string", Content: htmlContent("Template for output filenames.<br>Available variables: {BranchID}, {GateID}, {StationID}, {YYYY}, {YY}, {MM}, {DD}, {Date}, {Time}")},
-		{SortOrder: 230, Key: SettingDataSourcePathFormat, Value: "{MM}{YY}/{StationID}/{DD}{MM}{YYYY}.mdb", Name: "Data Source Path Format", Icon: "Database", Group: "PDF", DataType: "string", Content: htmlContent("Template for Access database source path.<br>Available variables: {BranchID}, {GateID}, {StationID}, {YYYY}, {YY}, {MM}, {DD}, {Date}, {Time}")},
+		{SortOrder: 220, Key: SettingOutputFilenameFormat, Value: "{BranchID}_{GateID}_{DATE}", Name: "Filename Format", Icon: "FileCode", Group: "PDF", DataType: "string", Content: htmlContent("Template for output filenames.<br>Available variables: {BranchID}, {GateID}, {StationID}, {YYYY}, {YY}, {MM}, {DD}, {Date}, {Time}")},
+		{SortOrder: 230, Key: SettingDataSourcePathFormat, Value: "{MM}-{YYYY}/{StationID}/{DD}{MM}{YYYY}.mdb", Name: "Data Source Path Format", Icon: "Database", Group: "PDF", DataType: "string", Content: htmlContent("Template for Access database source path.<br>Available variables: {BranchID}, {GateID}, {StationID}, {YYYY}, {YY}, {MM}, {DD}, {Date}, {Time}")},
 
 		// Scheduling (300)
 		{SortOrder: 310, Key: SettingTimeOverlap, Value: "00:00", Name: "Day Start Time", Icon: "Clock", Group: "Scheduling", DataType: "time", Content: htmlContent("Daily transaction window start time (HH:MM).<br>Example: 02:00 means transactions from 02:00 today to 01:59:59 tomorrow.")},
