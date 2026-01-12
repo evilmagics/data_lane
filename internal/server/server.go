@@ -220,7 +220,9 @@ func (s *Server) Start(addr string) error {
 		s.processService.StartMonitoring(context.Background())
 	}
 
-	return s.app.Listen(addr)
+	return s.app.Listen(addr, fiber.ListenConfig{
+		DisableStartupMessage: true,
+	})
 }
 
 // GetApp returns the Fiber app instance

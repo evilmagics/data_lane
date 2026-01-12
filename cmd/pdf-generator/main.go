@@ -15,6 +15,7 @@ import (
 	"pdf_generator/internal/adapters/repository"
 	"pdf_generator/pkg/database"
 	"pdf_generator/pkg/queue"
+	"pdf_generator/pkg/version"
 )
 
 type program struct {
@@ -40,13 +41,17 @@ func (p *program) Stop(s service.Service) error {
 }
 
 func (p *program) run() {
-	log.Info().Msg("Service started")
+	log.Info().
+		Str("version", version.Version).
+		Str("build", version.Build).
+		Msg("Service started")
 
 	// Try loading env, but don't fail if not found (might use system envs)
 	_ = godotenv.Load()
 
 	// Initialize Logger
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
+	zerolog.TimeFieldFormat = "02-01-2006 15:04:05"
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "02-01-2006 15:04:05"})
 
 	// Initialize Database (uses default path: data/app.db)
 	// Ensure directories exist first

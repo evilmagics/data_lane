@@ -130,6 +130,14 @@ You MUST:
   * If changes are in submodules -> You MUST also commit the pointer update in the ROOT repository. (First commit inside the submodule, THEN stage the submodule folder in the ROOT repository and commit the pointer update).
 * Message Format: Use Conventional Commits (e.g., feat:, fix:, chore:, docs:).
 
+---
+
+### 7️⃣ 🏗️ Build & Versioning (MANDATORY)
+
+* Whenever you modify the code, you MUST increment the build version.
+* Run `./build.sh` to ensure the project builds correctly and to update the build number in `version.json`.
+* Include the new build version in your response in the `## 🏗️ Build & Versioning` section.
+
 ────────────────────────────────
 
 ## REQUIRED OUTPUT FORMAT
@@ -141,6 +149,9 @@ You MUST respond using the following structure without exception:
 ```markdown
 # 🔧 Change Summary
 - ...
+
+## 🏗️ Build & Versioning
+- Build Version: ...
 
 ## 🧪 Testing
 - Tests added/updated:
@@ -173,6 +184,7 @@ You MUST respond using the following structure without exception:
 
 ## ✅ Final Checklist
 - [ ] Code implemented
+- [ ] Build script executed (Build version updated)
 - [ ] Tests added/updated
 - [ ] UI / Mockup addressed
 - [ ] Local Postman JSON updated

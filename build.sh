@@ -18,12 +18,30 @@ if [ "$TARGET_OS" = "windows" ]; then
     EXT=".exe"
 fi
 
+# ========================================
+# Versioning
+# ========================================
+VERSION_FILE="version.json"
+if [ ! -f "$VERSION_FILE" ]; then
+    echo "{\"version\": \"1.0.0\", \"build\": 0}" > "$VERSION_FILE"
+fi
+
+# Simple parser to extract version and build
+VERSION=$(grep '"version":' "$VERSION_FILE" | sed -E 's/.*"version": "(.*)".*/\1/')
+BUILD=$(grep '"build":' "$VERSION_FILE" | sed -E 's/.*"build": ([0-9]+).*/\1/')
+
+# Increment build
+NEW_BUILD=$((BUILD + 1))
+
+# Update version.json (using portable sed)
+sed -i "s/\"build\": $BUILD/\"build\": $NEW_BUILD/" "$VERSION_FILE"
+
 # Define output directory
 OUTPUT_DIR="build/${TARGET_OS}_${TARGET_ARCH}"
 mkdir -p $OUTPUT_DIR
 
 echo "========================================"
-echo "  DataLane Build Script"
+echo "  DataLane Build Script | v$VERSION (Build $NEW_BUILD)"
 echo "========================================"
 echo "Target: $TARGET_OS/$TARGET_ARCH"
 echo "Output: $OUTPUT_DIR"
@@ -112,9 +130,12 @@ echo "🔨 Building Go binaries..."
 export GOOS=$TARGET_OS
 export GOARCH=$TARGET_ARCH
 
+# LDFLAGS for versioning
+LDFLAGS="-X 'pdf_generator/pkg/version.Version=$VERSION' -X 'pdf_generator/pkg/version.Build=$NEW_BUILD'"
+
 # Build API Server
 echo "   Building API Server (datalane)..."
-go build -o $OUTPUT_DIR/datalane$EXT ./cmd/main.go
+go build -ldflags "$LDFLAGS" -o $OUTPUT_DIR/datalane$EXT ./cmd/main.go
 if [ $? -eq 0 ]; then
     echo "   ✅ datalane$EXT"
 else
@@ -124,7 +145,7 @@ fi
 
 # Build Worker Service
 echo "   Building PDF Worker (datalane_gen_pdf)..."
-go build -o $OUTPUT_DIR/datalane_gen_pdf$EXT ./cmd/pdf-generator/main.go
+go build -ldflags "$LDFLAGS" -o $OUTPUT_DIR/datalane_gen_pdf$EXT ./cmd/pdf-generator/main.go
 if [ $? -eq 0 ]; then
     echo "   ✅ datalane_gen_pdf$EXT"
 else

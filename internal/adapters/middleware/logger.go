@@ -1,13 +1,15 @@
 package middleware
 
 import (
+	"strings"
 	"time"
 
+	"pdf_generator/pkg/logger"
+
 	"github.com/gofiber/fiber/v3"
-	"github.com/rs/zerolog/log"
 )
 
-// LoggerMiddleware logs HTTP requests
+// LoggerMiddleware logs HTTP requests categorized by API or UI
 func LoggerMiddleware() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		start := time.Now()
@@ -17,9 +19,17 @@ func LoggerMiddleware() fiber.Handler {
 		
 		// Log after request
 		duration := time.Since(start)
-		log.Info().
+		path := c.Path()
+		
+		// Select logger based on path
+		l := logger.API
+		if !strings.HasPrefix(path, "/api") && !strings.HasPrefix(path, "/sse") {
+			l = logger.UI
+		}
+
+		l.Info().
 			Str("method", c.Method()).
-			Str("path", c.Path()).
+			Str("path", path).
 			Int("status", c.Response().StatusCode()).
 			Dur("duration", duration).
 			Str("ip", c.IP()).

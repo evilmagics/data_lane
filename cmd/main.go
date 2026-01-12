@@ -14,6 +14,7 @@ import (
 	"pdf_generator/pkg/database"
 	"pdf_generator/pkg/logger"
 	"pdf_generator/pkg/queue"
+	"pdf_generator/pkg/version"
 )
 
 func main() {
@@ -31,7 +32,10 @@ func main() {
 	}
 	defer logger.Close()
 
-	log.Info().Msg("Starting PDF Generator Application")
+	log.Info().
+		Str("version", version.Version).
+		Str("build", version.Build).
+		Msg("Starting PDF Generator Application")
 
 	// Initialize database (uses default path: data/app.db)
 	if err := database.InitDB(""); err != nil {
