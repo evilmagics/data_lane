@@ -39,7 +39,7 @@ type ProgressCallback func(stage string, current, total int)
 
 // GeneratePDFWithProgress creates a PDF from the given metadata with progress reporting
 func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, settingsRepo ports.SettingsRepository, gateRepo ports.GateRepository, onProgress ProgressCallback) (string, int64, error) {
-	log.Info().Int("branch_id", metadata.BranchID).Msg("Starting PDF generation")
+	log.Info().Int("branch_id", metadata.BranchID).Int("station_id", metadata.StationID).Msg("Starting PDF generation")
 
 	// Report initial progress
 	if onProgress != nil {
@@ -100,7 +100,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 		onProgress("Connecting to database", 0, 0)
 	}
 
-	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.GateID))
+	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.StationID))
 	dbPath = filepath.FromSlash(dbPath) // Ensure correct separators for Windows
 
 	// Check datasource from filepath while running the task
@@ -200,7 +200,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	headerTextStyle := props.Text{Size: 11, Style: fontstyle.Bold, Align: align.Left, Top: 1}
 
 	// Use gate name from lookup for header
-	gateLabel := fmt.Sprintf("GERBANG : %s", getGateName(metadata.GateID))
+	gateLabel := fmt.Sprintf("GERBANG : %s", getGateName(metadata.StationID))
 
 	dateStr := time.Now().Format("02/01/2006 15:04:05")
 
@@ -471,8 +471,8 @@ func formatFilename(format string, metadata domain.TaskMetadata) string {
 	now := time.Now()
 	result := format
 	result = strings.ReplaceAll(result, "{branch_id}", strconv.Itoa(metadata.BranchID))
-	result = strings.ReplaceAll(result, "{gate_id}", strconv.Itoa(metadata.GateID))
-	result = strings.ReplaceAll(result, "{station_id}", strconv.Itoa(metadata.GateID))
+	result = strings.ReplaceAll(result, "{gate_id}", strconv.Itoa(metadata.StationID))
+	result = strings.ReplaceAll(result, "{station_id}", strconv.Itoa(metadata.StationID))
 
 	// Use transaction filter date for {date}, not generation time
 	dateStr := now.Format("20060102") // Default to current date

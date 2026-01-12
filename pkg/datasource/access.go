@@ -65,7 +65,7 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 
 	for _, attempt := range attempts {
 		log.Debug().Str("driver", attempt.driver).Str("dsn", attempt.dsn).Msg("Attempting to connect to MS Access")
-		
+
 		db, err = sql.Open(attempt.driver, attempt.dsn)
 		if err != nil {
 			log.Warn().Err(err).Str("driver", attempt.driver).Msg("Failed to open database with driver, trying next fallback")
@@ -117,24 +117,24 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 		if dayStartTime == "" {
 			dayStartTime = "00:00"
 		}
-		
+
 		// Parse the date and day start time
 		startDateTime := filter.Date + " " + dayStartTime + ":00"
-		
+
 		// Calculate end time (next day at startTime - 1 second)
 		parsedDate, err := time.Parse("2006-01-02", filter.Date)
 		if err == nil {
 			nextDay := parsedDate.AddDate(0, 0, 1)
 			endDateTime := nextDay.Format("2006-01-02") + " " + dayStartTime + ":00"
-			
+
 			// Parse start and end times, then subtract 1 second from end
 			startTime, _ := time.Parse("2006-01-02 15:04:05", startDateTime)
 			endTime, _ := time.Parse("2006-01-02 15:04:05", endDateTime)
 			endTime = endTime.Add(-time.Second)
-			
+
 			query += " AND [WAKTU] >= ? AND [WAKTU] <= ?"
 			args = append(args, startTime.Format("2006-01-02 15:04:05"), endTime.Format("2006-01-02 15:04:05"))
-			
+
 			log.Debug().
 				Str("date", filter.Date).
 				Str("day_start_time", dayStartTime).
@@ -311,25 +311,26 @@ func TranslateTransactionMethod(method string) string {
 }
 
 // GetDataSourcePath constructs the path to the Access database file
-// Format: {root}/{month_2_digit}{year_2_digit}/{gate_id_2_digit}/{day_2_digit}{month_2_digit}{year_4_digit}.mdb
-func GetDataSourcePath(rootFolder string, transactionTime time.Time, gateID string) string {
+// Format: {root}/{month_2_digit}{year_2_digit}/{station_id_2_digit}/{day_2_digit}{month_2_digit}{year_4_digit}.mdb
+func GetDataSourcePath(rootFolder string, transactionTime time.Time, stationID string) string {
 	// Format time components
 	monthShort := transactionTime.Format("01")
 	day := transactionTime.Format("02")
+	yearShort := transactionTime.Format("06")
 	yearFull := transactionTime.Format("2006")
 
-	// Create folder name: MM-YYYY (e.g., 12-2024)
-	folderName := fmt.Sprintf("%s-%s", monthShort, yearFull)
+	// Create folder name: MMYY (e.g., 1224)
+	folderName := fmt.Sprintf("%s%s", monthShort, yearShort)
 
 	// Create filename: DDMMYYYY.mdb (e.g., 20122024.mdb)
 	fileName := fmt.Sprintf("%s%s%s.mdb", day, monthShort, yearFull)
 
-	// Ensure gate ID is 2 digits (e.g., "1" -> "01", "01" -> "01")
-	// If gateID is not numeric, use as is (though user specified 2 digit ID)
-	cleanGateID := gateID
-	if len(cleanGateID) == 1 {
-		cleanGateID = "0" + cleanGateID
+	// Ensure station ID is 2 digits (e.g., "1" -> "01", "01" -> "01")
+	// If stationID is not numeric, use as is (though user specified 2 digit ID)
+	cleanStationID := stationID
+	if len(cleanStationID) == 1 {
+		cleanStationID = "0" + cleanStationID
 	}
 
-	return fmt.Sprintf("%s/%s/%s/%s", rootFolder, folderName, cleanGateID, fileName)
+	return fmt.Sprintf("%s/%s/%s/%s", rootFolder, folderName, cleanStationID, fileName)
 }

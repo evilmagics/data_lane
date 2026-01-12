@@ -7,7 +7,7 @@ The PDF Generator uses a persistent task queue to handle PDF generation jobs asy
 1.  **Request**: Client sends a POST request to `/api/queue` with task metadata.
 2.  **Persistence**: The task is immediately stored in the primary `sqlite` database with status `queued`. Key fields are extracted for efficient querying:
     *   `root_folder`: Source data root path
-    *   `gate_id`: Target gate ID
+    *   `station_id`: Target station ID
     *   `filter_json`: JSON serialized filter configuration
 3.  **Enqueue**: The task ID and metadata are pushed to the `backlite` queue (backed by `sqlite`).
 4.  **Worker**: A background worker (running in the same process) picks up the task.

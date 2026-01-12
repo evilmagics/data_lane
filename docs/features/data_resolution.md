@@ -13,11 +13,11 @@ The data source path is constructed using the following components:
 ### Path Format
 The file path follows this structure:
 ```
-{root}/{MM-YYYY}/{StationID}/{DDMMYYYY}.mdb
+{root}/{MMYY}/{StationID}/{DDMMYYYY}.mdb
 ```
 
 ### Components
-- `MM-YYYY`: Month (2 digits), Hyphen, and Year (4 digits) of the transaction date.
+- `MMYY`: Month (2 digits) and Year (2 digits) of the transaction date.
 - `StationID`: 2-digit station ID (padded with '0' if single digit).
 - `DDMMYYYY`: Day (2 digits), Month (2 digits), and Year (4 digits) of the transaction date.
 
@@ -29,7 +29,7 @@ Given:
 
 The resolved path will be:
 ```
-D:\TollData\12-2024\01\20122024.mdb
+D:\TollData\1224\01\20122024.mdb
 ```
 
 ## Fallback Behavior

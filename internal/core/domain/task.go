@@ -29,7 +29,7 @@ type Task struct {
 
 	// Extracted metadata fields
 	RootFolder   string `gorm:"type:text" json:"root_folder"`
-	GateID       int    `gorm:"type:integer" json:"gate_id"`
+	StationID    int    `gorm:"type:integer" json:"station_id"`
 	FilterJSON   string `gorm:"type:text" json:"filter_json"`   // JSON string of TaskFilter
 	SettingsJSON string `gorm:"type:text" json:"settings_json"` // JSON string of custom settings
 
@@ -55,7 +55,7 @@ func (t *Task) BeforeCreate(tx *gorm.DB) error {
 type TaskMetadata struct {
 	RootFolder string            `json:"root_folder"`
 	BranchID   int               `json:"branch_id"` // Fetched from settings
-	GateID     int               `json:"gate_id"`
+	StationID  int               `json:"station_id"`
 	Filter     TaskFilter        `json:"filter"`
 	Settings   map[string]string `json:"settings,omitempty"`
 }
