@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"pdf_generator/internal/core/domain"
@@ -125,6 +126,10 @@ func (s *SettingsService) GetAll(ctx context.Context) ([]domain.Settings, error)
 	for _, s := range s.cache {
 		settings = append(settings, s)
 	}
+
+	sort.Slice(settings, func(i, j int) bool {
+		return settings[i].SortOrder < settings[j].SortOrder
+	})
 
 	return settings, nil
 }

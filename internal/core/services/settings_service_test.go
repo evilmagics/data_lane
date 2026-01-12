@@ -85,3 +85,30 @@ func TestSettingsService_Cache(t *testing.T) {
 
 	repo.AssertExpectations(t)
 }
+
+func TestSettingsService_Ordering(t *testing.T) {
+	repo := new(MockSettingsRepo)
+	svc := services.NewSettingsService(repo)
+	ctx := context.Background()
+
+	// Unordered input from repo or just input that needs sorting
+	settings := []domain.Settings{
+		{Key: "a", SortOrder: 100},
+		{Key: "c", SortOrder: 50},
+		{Key: "b", SortOrder: 10},
+	}
+
+	repo.On("GetAll", ctx).Return(settings, nil).Once()
+
+	err := svc.LoadCache(ctx)
+	assert.NoError(t, err)
+
+	all, err := svc.GetAll(ctx)
+	assert.NoError(t, err)
+	
+	assert.Len(t, all, 3)
+	// Expect sorted by SortOrder: 10 (b), 50 (c), 100 (a)
+	assert.Equal(t, "b", all[0].Key)
+	assert.Equal(t, "c", all[1].Key)
+	assert.Equal(t, "a", all[2].Key)
+}

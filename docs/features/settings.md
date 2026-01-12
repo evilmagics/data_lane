@@ -18,3 +18,6 @@ Key settings include:
 ## API
 Settings are managed via the `/api/settings` endpoints (Admin only).
 See `api_spec.md` for full API details.
+
+## Ordering & Grouping
+Settings are grouped by category (e.g., General, PDF, Security) and are sorted based on a `sort_order` field. This ensures a consistent and logical display order in the UI.

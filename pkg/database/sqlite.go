@@ -150,6 +150,7 @@ func seedDefaults() error {
 			existing.Content = setting.Content
 			existing.Name = setting.Name
 			existing.Icon = setting.Icon
+			existing.SortOrder = setting.SortOrder
 
 			// Special migration: time_overlap was changed from minutes (number) to HH:MM (time)
 			// Convert old numeric value to time format

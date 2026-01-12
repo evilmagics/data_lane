@@ -33,6 +33,6 @@ func (r *settingsRepository) Set(ctx context.Context, setting *domain.Settings) 
 
 func (r *settingsRepository) GetAll(ctx context.Context) ([]domain.Settings, error) {
 	var settings []domain.Settings
-	err := r.db.WithContext(ctx).Find(&settings).Error
+	err := r.db.WithContext(ctx).Order("sort_order asc").Find(&settings).Error
 	return settings, err
 }
