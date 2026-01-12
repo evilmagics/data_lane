@@ -131,6 +131,7 @@ func runMigrations() error {
 		&domain.APIKey{},
 		&domain.Log{},
 		&domain.Gate{},
+		&domain.Station{},
 	)
 }
 

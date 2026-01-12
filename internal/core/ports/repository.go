@@ -75,6 +75,7 @@ type LogRepository interface {
 	CleanupOld(ctx context.Context, days int) error
 }
 
+
 // GateRepository defines the interface for gate data access
 type GateRepository interface {
 	Create(ctx context.Context, gate *domain.Gate) error
@@ -84,6 +85,18 @@ type GateRepository interface {
 	List(ctx context.Context) ([]domain.Gate, error)
 	BatchCreate(ctx context.Context, gates []domain.Gate) error
 	BatchUpdate(ctx context.Context, gates []domain.Gate) error
+	BatchDelete(ctx context.Context, ids []int) error
+}
+
+// StationRepository defines the interface for station data access
+type StationRepository interface {
+	Create(ctx context.Context, station *domain.Station) error
+	GetByID(ctx context.Context, id int) (*domain.Station, error)
+	Update(ctx context.Context, station *domain.Station) error
+	Delete(ctx context.Context, id int) error
+	List(ctx context.Context) ([]domain.Station, error)
+	BatchCreate(ctx context.Context, stations []domain.Station) error
+	BatchUpdate(ctx context.Context, stations []domain.Station) error
 	BatchDelete(ctx context.Context, ids []int) error
 }
 
