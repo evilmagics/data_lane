@@ -54,7 +54,12 @@ The PDF Generator uses a persistent task queue to handle PDF generation jobs asy
 *   When a task fails, the `error_message` field contains the detailed error description.
 *   This is visible via the task detail API (`GET /api/tasks/:id`) and SSE stream.
 
-## Monitoring
+## Monitoring & UI
 *   **API**: `GET /api/queue/stats` (if implemented) or via `GET /api/tasks`.
 *   **SSE**: Real-time updates are pushed to the `/sse/tasks/:id` stream when task status or progress changes.
+*   **Queue Page**:
+    *   Displays tasks in a table with **ID (Detail Button)**, **Station Info (Branch/Gate/Station)**, **Status**, and **Created At**.
+    *   **Detail Modal**: Shows full task info including `Filters Used` and `Settings Used` in expanded sections.
+    *   **Downloads**: Completed tasks can be downloaded with a confirmation step.
+    *   **Time Format**: Displayed as `dd/MM/yyyy HH:mm:ss`.
 
