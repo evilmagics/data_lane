@@ -18,28 +18,34 @@ import (
 type MockTaskRepo struct {
 	mock.Mock
 }
+
 // Stub methods for MockTaskRepo
-func (m *MockTaskRepo) Create(ctx context.Context, task *domain.Task) error { return nil }
+func (m *MockTaskRepo) Create(ctx context.Context, task *domain.Task) error          { return nil }
 func (m *MockTaskRepo) GetByID(ctx context.Context, id string) (*domain.Task, error) { return nil, nil }
-func (m *MockTaskRepo) Update(ctx context.Context, task *domain.Task) error { return nil }
+func (m *MockTaskRepo) Update(ctx context.Context, task *domain.Task) error          { return nil }
 func (m *MockTaskRepo) UpdateProgress(ctx context.Context, id string, stage string, current, total int) error {
 	return nil
 }
 func (m *MockTaskRepo) UpdateError(ctx context.Context, id string, errMsg string) error { return nil }
-func (m *MockTaskRepo) Delete(ctx context.Context, id string) error { return nil }
-func (m *MockTaskRepo) List(ctx context.Context, filter ports.TaskFilter) ([]domain.Task, int64, error) { 
+func (m *MockTaskRepo) Delete(ctx context.Context, id string) error                     { return nil }
+func (m *MockTaskRepo) List(ctx context.Context, filter ports.TaskFilter) ([]domain.Task, int64, error) {
 	return nil, 0, nil
 }
-func (m *MockTaskRepo) CountByStatus(ctx context.Context, status domain.TaskStatus) (int64, error) { return 0, nil }
+func (m *MockTaskRepo) CountByStatus(ctx context.Context, status domain.TaskStatus) (int64, error) {
+	return 0, nil
+}
 func (m *MockTaskRepo) GetQueuePosition(ctx context.Context, id string) (int, error) { return 0, nil }
-func (m *MockTaskRepo) FindExpiredCompleted(ctx context.Context, days int) ([]domain.Task, error) { return nil, nil }
+func (m *MockTaskRepo) FindExpiredCompleted(ctx context.Context, days int) ([]domain.Task, error) {
+	return nil, nil
+}
 
-// We need to match the signature of List EXACTLY with ports definition, which I can't check easily without looking at ports. 
+// We need to match the signature of List EXACTLY with ports definition, which I can't check easily without looking at ports.
 // Assuming ports.TaskFilter.
 
 type MockSettingsRepo struct {
 	mock.Mock
 }
+
 func (m *MockSettingsRepo) Get(ctx context.Context, key string) (*domain.Settings, error) {
 	args := m.Called(ctx, key)
 	if args.Get(0) == nil {
@@ -48,20 +54,22 @@ func (m *MockSettingsRepo) Get(ctx context.Context, key string) (*domain.Setting
 	return args.Get(0).(*domain.Settings), args.Error(1)
 }
 func (m *MockSettingsRepo) Set(ctx context.Context, setting *domain.Settings) error { return nil }
-func (m *MockSettingsRepo) GetAll(ctx context.Context) ([]domain.Settings, error) { return nil, nil }
+func (m *MockSettingsRepo) GetAll(ctx context.Context) ([]domain.Settings, error)   { return nil, nil }
 
 type MockGateRepo struct {
 	mock.Mock
 }
-func (m *MockGateRepo) Create(ctx context.Context, gate *domain.Gate) error { return nil }
+
+func (m *MockGateRepo) Create(ctx context.Context, gate *domain.Gate) error       { return nil }
 func (m *MockGateRepo) GetByID(ctx context.Context, id int) (*domain.Gate, error) { return nil, nil }
-func (m *MockGateRepo) Update(ctx context.Context, gate *domain.Gate) error { return nil }
-func (m *MockGateRepo) Delete(ctx context.Context, id int) error { return nil }
-func (m *MockGateRepo) List(ctx context.Context) ([]domain.Gate, error) { return nil, nil }
+func (m *MockGateRepo) Update(ctx context.Context, gate *domain.Gate) error       { return nil }
+func (m *MockGateRepo) Delete(ctx context.Context, id int) error                  { return nil }
+func (m *MockGateRepo) List(ctx context.Context, filter ports.GateFilter) ([]domain.Gate, int64, error) {
+	return nil, 0, nil
+}
 func (m *MockGateRepo) BatchCreate(ctx context.Context, gates []domain.Gate) error { return nil }
 func (m *MockGateRepo) BatchUpdate(ctx context.Context, gates []domain.Gate) error { return nil }
-func (m *MockGateRepo) BatchDelete(ctx context.Context, ids []int) error { return nil }
-
+func (m *MockGateRepo) BatchDelete(ctx context.Context, ids []int) error           { return nil }
 
 func TestNewQueue(t *testing.T) {
 	// Setup in-memory SQLite DB for backlite
