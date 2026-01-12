@@ -111,17 +111,6 @@ func (s *SettingsService) GetAll(ctx context.Context) ([]domain.Settings, error)
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if len(s.cache) == 0 {
-		// Try LoadCache if empty? Or just return from repo?
-		// Requirement: "All function need fetch to settings only fetch from cache"
-		// If cache is empty, it might be uninitialized or genuinely empty.
-		// Let's assume LoadCache was called. If empty, return empty list.
-		// However, to be robust, we could check if initialized.
-		// For now, let's just return what's in cache.
-		// If the user forgot LoadCache, they get empty list.
-		// Wait, safe fallback is repo.
-	}
-
 	var settings []domain.Settings
 	for _, s := range s.cache {
 		settings = append(settings, s)
@@ -132,4 +121,9 @@ func (s *SettingsService) GetAll(ctx context.Context) ([]domain.Settings, error)
 	})
 
 	return settings, nil
+}
+
+// GetRepo returns the underlying settings repository
+func (s *SettingsService) GetRepo() ports.SettingsRepository {
+	return s.repo
 }

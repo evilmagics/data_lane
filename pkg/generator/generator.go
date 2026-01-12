@@ -29,6 +29,7 @@ import (
 	"pdf_generator/internal/core/domain"
 	"pdf_generator/internal/core/ports"
 	"pdf_generator/pkg/datasource"
+	"pdf_generator/pkg/utils"
 )
 
 // DefaultOutputDir is the default directory for PDF output files
@@ -96,11 +97,13 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 		targetDate = time.Now()
 	}
 
+	datasourceFormat := getSettingOrDefault(ctx, settingsRepo, domain.SettingDataSourcePathFormat, "{MM}{YY}/{StationID}/{DD}{MM}{YYYY}.mdb")
+
 	if onProgress != nil {
 		onProgress("Connecting to database", 0, 0)
 	}
 
-	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.StationID))
+	dbPath := datasource.GetDataSourcePath(datasourceFormat, metadata.RootFolder, targetDate, metadata.BranchID, metadata.StationID)
 	dbPath = filepath.FromSlash(dbPath) // Ensure correct separators for Windows
 
 	// Check datasource from filepath while running the task
@@ -468,30 +471,22 @@ func getPageSize(size string) pagesize.Type {
 }
 
 func formatFilename(format string, metadata domain.TaskMetadata) string {
-	now := time.Now()
-	result := format
-	result = strings.ReplaceAll(result, "{branch_id}", strconv.Itoa(metadata.BranchID))
-	result = strings.ReplaceAll(result, "{gate_id}", strconv.Itoa(metadata.StationID))
-	result = strings.ReplaceAll(result, "{station_id}", strconv.Itoa(metadata.StationID))
-
-	// Use transaction filter date for {date}, not generation time
-	dateStr := now.Format("20060102") // Default to current date
+	targetDate := time.Now()
 	if metadata.Filter.Date != "" {
-		// Parse filter date and reformat
 		if parsed, err := time.Parse("2006-01-02", metadata.Filter.Date); err == nil {
-			dateStr = parsed.Format("20060102")
+			targetDate = parsed
 		}
 	} else if metadata.Filter.RangeStart != "" {
-		// For range mode, use the start date
 		if parsed, err := time.Parse("2006-01-02", metadata.Filter.RangeStart[:10]); err == nil {
-			dateStr = parsed.Format("20060102")
+			targetDate = parsed
 		}
 	}
-	result = strings.ReplaceAll(result, "{date}", dateStr)
 
-	// Keep {time} as current time for uniqueness in filenames
-	result = strings.ReplaceAll(result, "{time}", now.Format("150405"))
-	return result
+	return utils.FormatPath(format, utils.PathParams{
+		Time:      targetDate,
+		BranchID:  metadata.BranchID,
+		StationID: metadata.StationID,
+	})
 }
 
 func nextTextPropTop(p props.Text, space float64, last *float64, reset ...bool) props.Text {

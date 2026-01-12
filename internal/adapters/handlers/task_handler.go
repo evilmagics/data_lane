@@ -19,15 +19,17 @@ import (
 
 // TaskHandler handles task endpoints
 type TaskHandler struct {
-	taskRepo ports.TaskRepository
-	queue    ports.QueueService
+	taskRepo     ports.TaskRepository
+	settingsRepo ports.SettingsRepository
+	queue        ports.QueueService
 }
 
 // NewTaskHandler creates a new task handler
-func NewTaskHandler(taskRepo ports.TaskRepository, queue ports.QueueService) *TaskHandler {
+func NewTaskHandler(taskRepo ports.TaskRepository, settingsRepo ports.SettingsRepository, queue ports.QueueService) *TaskHandler {
 	return &TaskHandler{
-		taskRepo: taskRepo,
-		queue:    queue,
+		taskRepo:     taskRepo,
+		settingsRepo: settingsRepo,
+		queue:        queue,
 	}
 }
 
@@ -168,7 +170,14 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 	} else {
 		targetDate = time.Now()
 	}
-	dbPath := datasource.GetDataSourcePath(normalizedRoot, targetDate, strconv.Itoa(req.StationID))
+
+	// Fetch datasource path format from settings
+	datasourceFormat := "{MM}{YY}/{StationID}/{DD}{MM}{YYYY}.mdb"
+	if setting, err := h.settingsRepo.Get(c.Context(), domain.SettingDataSourcePathFormat); err == nil && setting != nil {
+		datasourceFormat = setting.Value
+	}
+
+	dbPath := datasource.GetDataSourcePath(datasourceFormat, normalizedRoot, targetDate, req.BranchID, req.StationID)
 	dbPath = filepath.FromSlash(dbPath)
 	if _, err := os.Stat(dbPath); err != nil {
 		log.Info().Str("path", dbPath).Msg("Datasource file not found while adding new task")

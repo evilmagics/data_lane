@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"pdf_generator/internal/core/domain"
+	"pdf_generator/pkg/utils"
 )
 
 // Transaction represents a toll transaction
@@ -310,27 +311,13 @@ func TranslateTransactionMethod(method string) string {
 	return method
 }
 
-// GetDataSourcePath constructs the path to the Access database file
-// Format: {root}/{month_2_digit}{year_2_digit}/{station_id_2_digit}/{day_2_digit}{month_2_digit}{year_4_digit}.mdb
-func GetDataSourcePath(rootFolder string, transactionTime time.Time, stationID string) string {
-	// Format time components
-	monthShort := transactionTime.Format("01")
-	day := transactionTime.Format("02")
-	yearShort := transactionTime.Format("06")
-	yearFull := transactionTime.Format("2006")
+// GetDataSourcePath constructs the path to the Access database file using a format template
+func GetDataSourcePath(format string, rootFolder string, transactionTime time.Time, branchID int, stationID int) string {
+	path := utils.FormatPath(format, utils.PathParams{
+		Time:      transactionTime,
+		BranchID:  branchID,
+		StationID: stationID,
+	})
 
-	// Create folder name: MMYY (e.g., 1224)
-	folderName := fmt.Sprintf("%s%s", monthShort, yearShort)
-
-	// Create filename: DDMMYYYY.mdb (e.g., 20122024.mdb)
-	fileName := fmt.Sprintf("%s%s%s.mdb", day, monthShort, yearFull)
-
-	// Ensure station ID is 2 digits (e.g., "1" -> "01", "01" -> "01")
-	// If stationID is not numeric, use as is (though user specified 2 digit ID)
-	cleanStationID := stationID
-	if len(cleanStationID) == 1 {
-		cleanStationID = "0" + cleanStationID
-	}
-
-	return fmt.Sprintf("%s/%s/%s/%s", rootFolder, folderName, cleanStationID, fileName)
+	return fmt.Sprintf("%s/%s", rootFolder, path)
 }

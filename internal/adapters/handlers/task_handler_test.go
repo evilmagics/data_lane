@@ -55,6 +55,26 @@ func (m *MockTaskRepo) FindExpiredCompleted(ctx context.Context, days int) ([]do
 	return nil, nil
 }
 
+type MockSettingsRepo struct {
+	mock.Mock
+}
+
+func (m *MockSettingsRepo) Get(ctx context.Context, key string) (*domain.Settings, error) {
+	args := m.Called(ctx, key)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Settings), args.Error(1)
+}
+
+func (m *MockSettingsRepo) Set(ctx context.Context, setting *domain.Settings) error {
+	return nil
+}
+
+func (m *MockSettingsRepo) GetAll(ctx context.Context) ([]domain.Settings, error) {
+	return nil, nil
+}
+
 type MockQueue struct {
 	mock.Mock
 }
@@ -74,8 +94,9 @@ func (m *MockQueue) GetProgress(taskID string) *ports.TaskProgress {
 
 func TestTaskHandler_Enqueue_PathNormalization(t *testing.T) {
 	taskRepo := new(MockTaskRepo)
+	settingsRepo := new(MockSettingsRepo)
 	queue := new(MockQueue)
-	handler := handlers.NewTaskHandler(taskRepo, queue)
+	handler := handlers.NewTaskHandler(taskRepo, settingsRepo, queue)
 
 	app := fiber.New()
 	app.Post("/queue", handler.Enqueue)
@@ -85,11 +106,12 @@ func TestTaskHandler_Enqueue_PathNormalization(t *testing.T) {
 	reqBody := handlers.EnqueueRequest{
 		RootFolder: inputPath,
 		BranchID:   1,
-		GateID:     2,
+		StationID:  2,
 	}
 	body, _ := json.Marshal(reqBody)
 
 	// Expectations
+	settingsRepo.On("Get", mock.Anything, domain.SettingDataSourcePathFormat).Return(&domain.Settings{Value: "{MM}{YY}/{StationID}/{DD}{MM}{YYYY}.mdb"}, nil)
 	taskRepo.On("Create", mock.Anything, mock.MatchedBy(func(task *domain.Task) bool {
 		// Verify normalized path in task
 		if runtime.GOOS == "windows" {
@@ -123,17 +145,21 @@ func TestTaskHandler_Enqueue_PathNormalization(t *testing.T) {
 
 func TestTaskHandler_Enqueue(t *testing.T) {
 	taskRepo := new(MockTaskRepo)
+	settingsRepo := new(MockSettingsRepo)
 	queue := new(MockQueue)
-	handler := handlers.NewTaskHandler(taskRepo, queue)
+	handler := handlers.NewTaskHandler(taskRepo, settingsRepo, queue)
 
 	app := fiber.New()
 	app.Post("/queue", handler.Enqueue)
 
+	// Expectations
+	settingsRepo.On("Get", mock.Anything, domain.SettingDataSourcePathFormat).Return(&domain.Settings{Value: "{MM}{YY}/{StationID}/{DD}{MM}{YYYY}.mdb"}, nil)
+
 	// Payload
 	// Payload
 	reqBody := handlers.EnqueueRequest{
-		BranchID: 1,
-		GateID:   2,
+		BranchID:  1,
+		StationID: 2,
 
 		Settings: map[string]string{"foo": "bar"},
 	}

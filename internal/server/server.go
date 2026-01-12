@@ -70,7 +70,7 @@ func (s *Server) SetupRoutes() {
 	settingsHandler := handlers.NewSettingsHandler(s.settingsService)
 	apiKeyHandler := handlers.NewAPIKeyHandler(s.apiKeyService)
 	gateHandler := handlers.NewGateHandler(s.gateService)
-	taskHandler := handlers.NewTaskHandler(s.taskRepo, s.queue)
+	taskHandler := handlers.NewTaskHandler(s.taskRepo, s.settingsService.GetRepo(), s.queue)
 	scheduleHandler := handlers.NewScheduleHandler(s.scheduleRepo)
 	sseHandler := handlers.NewSSEHandler(s.taskRepo, s.queue)
 
