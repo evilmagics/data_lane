@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -69,6 +70,55 @@ func (m *MockQueue) Start(ctx context.Context) {
 
 func (m *MockQueue) GetProgress(taskID string) *ports.TaskProgress {
 	return nil
+}
+
+func TestTaskHandler_Enqueue_PathNormalization(t *testing.T) {
+	taskRepo := new(MockTaskRepo)
+	queue := new(MockQueue)
+	handler := handlers.NewTaskHandler(taskRepo, queue)
+
+	app := fiber.New()
+	app.Post("/queue", handler.Enqueue)
+
+	// Payload with forward slashes (even on Windows)
+	inputPath := "D:/test/data"
+	reqBody := handlers.EnqueueRequest{
+		RootFolder: inputPath,
+		BranchID:   1,
+		GateID:     2,
+	}
+	body, _ := json.Marshal(reqBody)
+
+	// Expectations
+	taskRepo.On("Create", mock.Anything, mock.MatchedBy(func(task *domain.Task) bool {
+		// Verify normalized path in task
+		if runtime.GOOS == "windows" {
+			return task.RootFolder == "D:\\test\\data"
+		}
+		return task.RootFolder == "D:/test/data"
+	})).Return(nil).Once()
+
+	queue.On("Enqueue", mock.Anything, "test-task-id", mock.MatchedBy(func(m domain.TaskMetadata) bool {
+		// Verify normalized path in metadata
+		if runtime.GOOS == "windows" {
+			return m.RootFolder == "D:\\test\\data"
+		}
+		return m.RootFolder == "D:/test/data"
+	})).Return([]string{"job-id"}, nil).Once()
+
+	taskRepo.On("GetQueuePosition", mock.Anything, "test-task-id").Return(1, nil).Once()
+	taskRepo.On("CountByStatus", mock.Anything, domain.TaskStatusQueued).Return(int64(1), nil).Once()
+
+	// Request
+	req := httptest.NewRequest("POST", "/queue", strings.NewReader(string(body)))
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
+
+	taskRepo.AssertExpectations(t)
+	queue.AssertExpectations(t)
 }
 
 func TestTaskHandler_Enqueue(t *testing.T) {

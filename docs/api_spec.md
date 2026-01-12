@@ -97,7 +97,7 @@ The embedded UI requires `/config.js` to be loaded to provision runtime configur
 **Request Body**:
 ```json
 {
-  "root_folder": "C:\\Data\\AccessDB",
+  "root_folder": "C:\\Data\\AccessDB", // Paths are automatically normalized to server's OS (Windows/Linux)
   "branch_id": 1,
   "gate_id": 1,
   "station_id": 1,
@@ -116,6 +116,8 @@ The embedded UI requires `/config.js` to be loaded to provision runtime configur
   }
 }
 ```
+
+> **Note**: When a task is enqueued or started, the system automatically checks for the existence of the datasource file and logs the result. Root folder paths are normalized based on the server's Operating System.
 
 **Response** (`data`):
 ```json

@@ -4,13 +4,17 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/rs/zerolog/log"
 
 	"pdf_generator/internal/core/domain"
 	"pdf_generator/internal/core/ports"
 	"pdf_generator/pkg/api"
+	"pdf_generator/pkg/datasource"
 )
 
 // TaskHandler handles task endpoints
@@ -147,9 +151,34 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 		return api.Error(c, api.CodeValidationError, "Gate ID must be between 0 and 100")
 	}
 
+	// Normalize root folder path based on OS
+	normalizedRoot := req.RootFolder
+	if runtime.GOOS == "windows" {
+		normalizedRoot = filepath.FromSlash(req.RootFolder)
+	} else {
+		normalizedRoot = filepath.ToSlash(req.RootFolder)
+	}
+
+	// Check datasource from filepath while adding new task
+	var targetDate time.Time
+	if req.Filter.Date != "" {
+		targetDate, _ = time.Parse("2006-01-02", req.Filter.Date)
+	} else if req.Filter.RangeStart != "" {
+		targetDate, _ = time.Parse("2006-01-02", req.Filter.RangeStart)
+	} else {
+		targetDate = time.Now()
+	}
+	dbPath := datasource.GetDataSourcePath(normalizedRoot, targetDate, strconv.Itoa(req.GateID))
+	dbPath = filepath.FromSlash(dbPath)
+	if _, err := os.Stat(dbPath); err != nil {
+		log.Info().Str("path", dbPath).Msg("Datasource file not found while adding new task")
+	} else {
+		log.Info().Str("path", dbPath).Msg("Datasource file found while adding new task")
+	}
+
 	// Create task metadata for queue
 	metadata := domain.TaskMetadata{
-		RootFolder: req.RootFolder,
+		RootFolder: normalizedRoot,
 		BranchID:   req.BranchID,
 		GateID:     req.GateID,
 		Filter:     req.Filter,
@@ -160,7 +189,7 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 
 	task := &domain.Task{
 		Status:       domain.TaskStatusQueued,
-		RootFolder:   req.RootFolder,
+		RootFolder:   normalizedRoot,
 		GateID:       req.GateID,
 		FilterJSON:   string(filterJSON),
 		SettingsJSON: string(settingsJSON),
@@ -173,7 +202,7 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 	// Process queue asynchronously if queue is available
 	if h.queue != nil {
 		if _, err := h.queue.Enqueue(c.Context(), task.ID, metadata); err != nil {
-			// If enqueue fails, should we fail the request? Or just log? 
+			// If enqueue fails, should we fail the request? Or just log?
 			// Usually we want to ensure it's enqueued.
 			// Revert task creation or mark as failed?
 			// For now, let's log error and return 500.

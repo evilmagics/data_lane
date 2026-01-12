@@ -101,8 +101,14 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	}
 
 	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.GateID))
-	log.Debug().Str("db_path", dbPath).Msg("Using database path")
 	dbPath = filepath.FromSlash(dbPath) // Ensure correct separators for Windows
+
+	// Check datasource from filepath while running the task
+	if _, err := os.Stat(dbPath); err != nil {
+		log.Info().Str("path", dbPath).Msg("Datasource file not found while running task")
+	} else {
+		log.Info().Str("path", dbPath).Msg("Datasource file found while running task")
+	}
 
 	// Populate DayStartTime in filter for daily queries
 	filter := metadata.Filter
