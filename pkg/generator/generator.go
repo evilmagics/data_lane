@@ -135,7 +135,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 	// Build gate name lookup map
 	gateNameMap := make(map[int]string)
 	if gateRepo != nil {
-		gates, err := gateRepo.List(ctx)
+		gates, _, err := gateRepo.List(ctx, ports.GateFilter{})
 		if err == nil {
 			for _, g := range gates {
 				gateNameMap[g.ID] = g.Name
