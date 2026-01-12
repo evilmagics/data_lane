@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"embed"
 
 	maroto "github.com/johnfercher/maroto/v2"
 	"github.com/johnfercher/maroto/v2/pkg/components/col"
@@ -34,6 +35,9 @@ import (
 
 // DefaultOutputDir is the default directory for PDF output files
 const DefaultOutputDir = "output"
+
+//go:embed fonts/nunito-sans/*.ttf
+var nunitoSansFonts embed.FS
 
 // ProgressCallback is called to report generation progress
 type ProgressCallback func(stage string, current, total int)
@@ -153,26 +157,29 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 
 	// Load Fonts
 	fontName := "nunito-sans"
-	fontPath := "./assets/fonts/nunito-sans"
-
-	// Validate font path existence
-	if _, err := os.Stat(fontPath); os.IsNotExist(err) {
-		log.Warn().Str("path", fontPath).Msg("Font directory not found, using default fonts")
-	}
-
 	var fonts []*entity.CustomFont
 	var loadErr error
 
-	fonts, loadErr = repository.New().
-		AddUTF8Font(fontName, fontstyle.Normal, path.Join(fontPath, "nunito-sans.regular.ttf")).
-		AddUTF8Font(fontName, fontstyle.Italic, path.Join(fontPath, "nunito-sans.italic.ttf")).
-		AddUTF8Font(fontName, fontstyle.Bold, path.Join(fontPath, "nunito-sans.bold.ttf")).
-		AddUTF8Font(fontName, fontstyle.BoldItalic, path.Join(fontPath, "nunito-sans.bold-italic.ttf")).
-		Load()
+	// Load fonts from embedded FS
+	regFont, _ := nunitoSansFonts.ReadFile("fonts/nunito-sans/nunito-sans.regular.ttf")
+	italicFont, _ := nunitoSansFonts.ReadFile("fonts/nunito-sans/nunito-sans.italic.ttf")
+	boldFont, _ := nunitoSansFonts.ReadFile("fonts/nunito-sans/nunito-sans.bold.ttf")
+	boldItalicFont, _ := nunitoSansFonts.ReadFile("fonts/nunito-sans/nunito-sans.bold-italic.ttf")
 
-	if loadErr != nil {
-		log.Error().Err(loadErr).Msg("Failed to load custom fonts, falling back to default")
-		fonts = nil // Ensure nil if error
+	if len(regFont) == 0 || len(italicFont) == 0 || len(boldFont) == 0 || len(boldItalicFont) == 0 {
+		log.Error().Msg("Failed to read one or more embedded font files")
+	} else {
+		fonts, loadErr = repository.New().
+			AddUTF8FontFromBytes(fontName, fontstyle.Normal, regFont).
+			AddUTF8FontFromBytes(fontName, fontstyle.Italic, italicFont).
+			AddUTF8FontFromBytes(fontName, fontstyle.Bold, boldFont).
+			AddUTF8FontFromBytes(fontName, fontstyle.BoldItalic, boldItalicFont).
+			Load()
+
+		if loadErr != nil {
+			log.Error().Err(loadErr).Msg("Failed to load custom fonts from bytes, falling back to default")
+			fonts = nil // Ensure nil if error
+		}
 	}
 
 	if onProgress != nil {

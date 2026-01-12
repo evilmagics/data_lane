@@ -15,7 +15,7 @@ The PDF Generator uses a persistent task queue to handle PDF generation jobs asy
 5.  **Processing**:
     *   Status updated to `running`.
     *   **Progress tracking**: The task reports progress with stage info (`loading_data`, `generating`, `saving`) and counts (current/total transactions).
-    *   PDF is generated using `maroto` with a detailed layout (including transaction images, custom fonts, and verified Access DB data).
+    *   PDF is generated using `maroto` with a detailed layout (including transaction images, custom fonts (embedded), and verified Access DB data).
     *   Output file is saved to `output/` directory as an **absolute path**.
 6.  **Completion**:
     *   On success: Status updated to `completed`, output details saved.
