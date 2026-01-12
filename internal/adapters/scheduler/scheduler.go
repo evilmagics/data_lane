@@ -103,7 +103,7 @@ func (s *Scheduler) executeSchedule(ctx context.Context, schedule domain.Schedul
 		ScheduleID:   &schedule.ID,
 		Status:       domain.TaskStatusQueued,
 		RootFolder:   metadata.RootFolder,
-		StationID:    metadata.StationID,
+		GateID:       metadata.GateID,
 		FilterJSON:   string(filterJSON),
 		SettingsJSON: string(settingsJSON),
 	}

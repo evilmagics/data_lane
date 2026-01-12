@@ -100,7 +100,7 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 		onProgress("Connecting to database", 0, 0)
 	}
 
-	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.StationID))
+	dbPath := datasource.GetDataSourcePath(metadata.RootFolder, targetDate, strconv.Itoa(metadata.GateID))
 	log.Debug().Str("db_path", dbPath).Msg("Using database path")
 	dbPath = filepath.FromSlash(dbPath) // Ensure correct separators for Windows
 
@@ -466,7 +466,7 @@ func formatFilename(format string, metadata domain.TaskMetadata) string {
 	result := format
 	result = strings.ReplaceAll(result, "{branch_id}", strconv.Itoa(metadata.BranchID))
 	result = strings.ReplaceAll(result, "{gate_id}", strconv.Itoa(metadata.GateID))
-	result = strings.ReplaceAll(result, "{station_id}", strconv.Itoa(metadata.StationID))
+	result = strings.ReplaceAll(result, "{station_id}", strconv.Itoa(metadata.GateID))
 
 	// Use transaction filter date for {date}, not generation time
 	dateStr := now.Format("20060102") // Default to current date

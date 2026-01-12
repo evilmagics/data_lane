@@ -264,8 +264,8 @@ func TranslateTransactionMethod(method string) string {
 }
 
 // GetDataSourcePath constructs the path to the Access database file
-// Format: {root}/{month_2_digit}{year_2_digit}/{station_id_2_digit}/{day_2_digit}{month_2_digit}{year_4_digit}.mdb
-func GetDataSourcePath(rootFolder string, transactionTime time.Time, stationID string) string {
+// Format: {root}/{month_2_digit}{year_2_digit}/{gate_id_2_digit}/{day_2_digit}{month_2_digit}{year_4_digit}.mdb
+func GetDataSourcePath(rootFolder string, transactionTime time.Time, gateID string) string {
 	// Format time components
 	monthShort := transactionTime.Format("01")
 	day := transactionTime.Format("02")
@@ -277,12 +277,12 @@ func GetDataSourcePath(rootFolder string, transactionTime time.Time, stationID s
 	// Create filename: DDMMYYYY.mdb (e.g., 20122024.mdb)
 	fileName := fmt.Sprintf("%s%s%s.mdb", day, monthShort, yearFull)
 
-	// Ensure station ID is 2 digits (e.g., "1" -> "01", "01" -> "01")
-	// If stationID is not numeric, use as is (though user specified 2 digit ID)
-	cleanStationID := stationID
-	if len(cleanStationID) == 1 {
-		cleanStationID = "0" + cleanStationID
+	// Ensure gate ID is 2 digits (e.g., "1" -> "01", "01" -> "01")
+	// If gateID is not numeric, use as is (though user specified 2 digit ID)
+	cleanGateID := gateID
+	if len(cleanGateID) == 1 {
+		cleanGateID = "0" + cleanGateID
 	}
 
-	return fmt.Sprintf("%s/%s/%s/%s", rootFolder, folderName, cleanStationID, fileName)
+	return fmt.Sprintf("%s/%s/%s/%s", rootFolder, folderName, cleanGateID, fileName)
 }
