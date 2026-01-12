@@ -41,7 +41,8 @@ func (r *gateRepository) Delete(ctx context.Context, id int) error {
 
 func (r *gateRepository) List(ctx context.Context) ([]domain.Gate, error) {
 	var gates []domain.Gate
-	err := r.db.WithContext(ctx).Find(&gates).Error
+	// Added Order("id asc") from Station repo logic
+	err := r.db.WithContext(ctx).Order("id asc").Find(&gates).Error
 	return gates, err
 }
 

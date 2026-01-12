@@ -43,8 +43,8 @@ func (h *GateHandler) Create(c fiber.Ctx) error {
 		}
 		// Validate IDs
 		for _, g := range gates {
-			if g.ID < 0 || g.ID > 100 {
-				return api.Error(c, api.CodeValidationError, "Gate ID must be 0-100")
+			if g.ID < 0 || g.ID > 999 {
+				return api.Error(c, api.CodeValidationError, "Gate ID must be 0-999")
 			}
 		}
 
@@ -55,7 +55,7 @@ func (h *GateHandler) Create(c fiber.Ctx) error {
 	} else {
 		// Single
 		var req struct {
-			ID   int    `json:"id"`
+			ID   any    `json:"id"` // Accept string or int
 			Name string `json:"name"`
 		}
 		if err := json.Unmarshal(body, &req); err != nil {
@@ -64,12 +64,29 @@ func (h *GateHandler) Create(c fiber.Ctx) error {
 		if req.Name == "" {
 			return api.Error(c, api.CodeValidationError, "Name is required")
 		}
-		if req.ID < 0 || req.ID > 100 {
-			return api.Error(c, api.CodeValidationError, "Gate ID must be 0-100")
+		
+		var id int
+		switch v := req.ID.(type) {
+		case string:
+			if v == "" {
+				if parsed, err := strconv.Atoi(v); err == nil {
+					id = parsed
+				}
+			} else {
+				if parsed, err := strconv.Atoi(v); err == nil {
+					id = parsed
+				}
+			}
+		case float64:
+			id = int(v)
+		}
+
+		if id < 0 || id > 999 {
+			return api.Error(c, api.CodeValidationError, "Gate ID must be 0-999")
 		}
 
 		gate := &domain.Gate{
-			ID:   req.ID,
+			ID:   id,
 			Name: req.Name,
 		}
 		if err := h.service.Create(c.Context(), gate); err != nil {
@@ -87,8 +104,8 @@ func (h *GateHandler) UpdateBatch(c fiber.Ctx) error {
 	}
 
 	for _, g := range gates {
-		if g.ID < 0 || g.ID > 100 {
-			return api.Error(c, api.CodeValidationError, "Gate ID must be 0-100")
+		if g.ID < 0 || g.ID > 999 {
+			return api.Error(c, api.CodeValidationError, "Gate ID must be 0-999")
 		}
 	}
 
@@ -103,7 +120,7 @@ func (h *GateHandler) UpdateBatch(c fiber.Ctx) error {
 func (h *GateHandler) UpdateSingle(c fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
-	if err != nil || id < 0 || id > 100 {
+	if err != nil || id < 0 || id > 999 {
 		return api.Error(c, api.CodeValidationError, "Invalid Gate ID")
 	}
 
