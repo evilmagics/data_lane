@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"pdf_generator/internal/core/domain"
+	"pdf_generator/internal/core/ports"
 )
 
 // Mock Repo
@@ -16,8 +17,8 @@ func (m *MockGateRepo) GetByID(ctx context.Context, id int) (*domain.Gate, error
 }
 func (m *MockGateRepo) Update(ctx context.Context, gate *domain.Gate) error { return nil }
 func (m *MockGateRepo) Delete(ctx context.Context, id int) error        { return nil }
-func (m *MockGateRepo) List(ctx context.Context) ([]domain.Gate, error) {
-	return []domain.Gate{{ID: 1, Name: "G1"}}, nil
+func (m *MockGateRepo) List(ctx context.Context, filter ports.GateFilter) ([]domain.Gate, int64, error) {
+	return []domain.Gate{{ID: 1, Name: "G1"}}, 1, nil
 }
 func (m *MockGateRepo) BatchCreate(ctx context.Context, gates []domain.Gate) error { return nil }
 func (m *MockGateRepo) BatchUpdate(ctx context.Context, gates []domain.Gate) error { return nil }
