@@ -7,6 +7,7 @@ import (
 	"time"
 
 	_ "github.com/alexbrainman/odbc"
+	_ "github.com/mattn/go-adodb"
 	"github.com/rs/zerolog/log"
 
 	"pdf_generator/internal/core/domain"
@@ -36,22 +37,68 @@ type Transaction struct {
 
 // LoadTransactions loads transactions from MS Access database
 func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilter) ([]Transaction, error) {
-	// Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=C:\myFolder\myAccessFile.accdb;
-	dsn := fmt.Sprintf("Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=%s;", dbPath)
+	// Try multiple drivers as fallback
+	var db *sql.DB
+	var err error
+	var lastErr error
 
-	db, err := sql.Open("odbc", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+	// Define driver attempts
+	type driverAttempt struct {
+		driver string
+		dsn    string
+	}
+
+	attempts := []driverAttempt{
+		{
+			driver: "odbc",
+			dsn:    fmt.Sprintf("Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=%s;", dbPath),
+		},
+		{
+			driver: "adodb",
+			dsn:    fmt.Sprintf("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=%s;", dbPath),
+		},
+		{
+			driver: "adodb",
+			dsn:    fmt.Sprintf("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=%s;", dbPath),
+		},
+	}
+
+	for _, attempt := range attempts {
+		log.Debug().Str("driver", attempt.driver).Str("dsn", attempt.dsn).Msg("Attempting to connect to MS Access")
+		
+		db, err = sql.Open(attempt.driver, attempt.dsn)
+		if err != nil {
+			log.Warn().Err(err).Str("driver", attempt.driver).Msg("Failed to open database with driver, trying next fallback")
+			lastErr = err
+			continue
+		}
+
+		// Set connection timeout and limits
+		db.SetConnMaxLifetime(5 * time.Minute)
+		db.SetMaxOpenConns(1)
+
+		// Create a shorter timeout for pinging
+		pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err = db.PingContext(pingCtx)
+		cancel()
+
+		if err != nil {
+			db.Close()
+			log.Warn().Err(err).Str("driver", attempt.driver).Msg("Failed to ping database with driver, trying next fallback")
+			lastErr = err
+			continue
+		}
+
+		// Success!
+		log.Info().Str("driver", attempt.driver).Msg("Successfully connected to MS Access database")
+		lastErr = nil
+		break
+	}
+
+	if lastErr != nil {
+		return nil, fmt.Errorf("failed to connect to MS Access after all attempts: %w", lastErr)
 	}
 	defer db.Close()
-
-	// Set connection timeout
-	db.SetConnMaxLifetime(5 * time.Minute)
-	db.SetMaxOpenConns(1)
-
-	if err := db.PingContext(ctx); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
 
 	// Build query with filters
 	// Use TOP clause only if limit is specified
