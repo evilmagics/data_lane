@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,12 +29,18 @@ type Task struct {
 	ErrorMessage string     `gorm:"type:text" json:"error_message,omitempty"`
 
 	// Extracted metadata fields
-	RootFolder   string `gorm:"type:text" json:"root_folder"`
-	BranchID     int    `gorm:"type:integer" json:"branch_id"`
-	GateID       int    `gorm:"type:integer" json:"gate_id"`
-	StationID    int    `gorm:"type:integer" json:"station_id"`
-	FilterJSON   string `gorm:"type:text" json:"filter_json"`   // JSON string of TaskFilter
-	SettingsJSON string `gorm:"type:text" json:"settings_json"` // JSON string of custom settings
+	RootFolder string `gorm:"type:text" json:"root_folder"`
+	BranchID   int    `gorm:"type:integer" json:"branch_id"`
+	GateID     int    `gorm:"type:integer" json:"gate_id"`
+	StationID  int    `gorm:"type:integer" json:"station_id"`
+
+	// Filters stored as object, serialized to JSON in database
+	Filters    *TaskFilter `gorm:"-" json:"filters,omitempty"`
+	FiltersRaw string      `gorm:"column:filter_json;type:text" json:"-"`
+
+	// Settings stored as map, serialized to JSON in database
+	Settings    map[string]any `gorm:"-" json:"settings,omitempty"`
+	SettingsRaw string         `gorm:"column:settings_json;type:text" json:"-"`
 
 	// Progress tracking
 	ProgressStage   string `gorm:"type:text" json:"progress_stage,omitempty"`      // Detailed stage description
@@ -50,17 +57,67 @@ func (t *Task) BeforeCreate(tx *gorm.DB) error {
 	if t.ID == "" {
 		t.ID = uuid.New().String()
 	}
+	return t.serializeJSON()
+}
+
+// BeforeSave serializes Filters and Settings to JSON before saving
+func (t *Task) BeforeSave(tx *gorm.DB) error {
+	return t.serializeJSON()
+}
+
+// AfterFind deserializes JSON to Filters and Settings after loading
+func (t *Task) AfterFind(tx *gorm.DB) error {
+	return t.deserializeJSON()
+}
+
+// serializeJSON converts Filters and Settings objects to JSON strings
+func (t *Task) serializeJSON() error {
+	if t.Filters != nil {
+		data, err := json.Marshal(t.Filters)
+		if err != nil {
+			return err
+		}
+		t.FiltersRaw = string(data)
+	}
+
+	if t.Settings != nil {
+		data, err := json.Marshal(t.Settings)
+		if err != nil {
+			return err
+		}
+		t.SettingsRaw = string(data)
+	}
+
+	return nil
+}
+
+// deserializeJSON converts JSON strings to Filters and Settings objects
+func (t *Task) deserializeJSON() error {
+	if t.FiltersRaw != "" {
+		var filters TaskFilter
+		if err := json.Unmarshal([]byte(t.FiltersRaw), &filters); err == nil {
+			t.Filters = &filters
+		}
+	}
+
+	if t.SettingsRaw != "" {
+		var settings map[string]any
+		if err := json.Unmarshal([]byte(t.SettingsRaw), &settings); err == nil {
+			t.Settings = settings
+		}
+	}
+
 	return nil
 }
 
 // TaskMetadata contains the parameters for PDF generation (used in queue, not stored directly)
 type TaskMetadata struct {
-	RootFolder string            `json:"root_folder"`
-	BranchID   int               `json:"branch_id"` // Fetched from settings
-	GateID     int               `json:"gate_id"`
-	StationID  int               `json:"station_id"`
-	Filter     TaskFilter        `json:"filter"`
-	Settings   map[string]string `json:"settings,omitempty"`
+	RootFolder string         `json:"root_folder"`
+	BranchID   int            `json:"branch_id"` // Fetched from settings
+	GateID     int            `json:"gate_id"`
+	StationID  int            `json:"station_id"`
+	Filter     TaskFilter     `json:"filter"`
+	Settings   map[string]any `json:"settings,omitempty"`
 }
 
 // TaskFilter contains date and transaction filtering options

@@ -161,7 +161,7 @@ func TestTaskHandler_Enqueue(t *testing.T) {
 		BranchID:  1,
 		StationID: 2,
 
-		Settings: map[string]string{"foo": "bar"},
+		Settings: map[string]any{"foo": "bar"},
 	}
 	body, _ := json.Marshal(reqBody)
 

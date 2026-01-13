@@ -97,16 +97,14 @@ func (s *Scheduler) executeSchedule(ctx context.Context, schedule domain.Schedul
 	}
 
 	// Create new task with extracted fields
-	filterJSON, _ := json.Marshal(metadata.Filter)
-	settingsJSON, _ := json.Marshal(metadata.Settings)
 	task := &domain.Task{
-		ScheduleID:   &schedule.ID,
-		Status:       domain.TaskStatusQueued,
-		RootFolder:   metadata.RootFolder,
-		GateID:       metadata.GateID,
-		StationID:    metadata.StationID,
-		FilterJSON:   string(filterJSON),
-		SettingsJSON: string(settingsJSON),
+		ScheduleID: &schedule.ID,
+		Status:     domain.TaskStatusQueued,
+		RootFolder: metadata.RootFolder,
+		GateID:     metadata.GateID,
+		StationID:  metadata.StationID,
+		Filters:    &metadata.Filter,
+		Settings:   metadata.Settings,
 	}
 
 	if err := s.taskRepo.Create(ctx, task); err != nil {

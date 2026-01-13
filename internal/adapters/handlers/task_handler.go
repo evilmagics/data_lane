@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -40,7 +39,7 @@ type EnqueueRequest struct {
 	GateID     int               `json:"gate_id"`
 	StationID  int               `json:"station_id"`
 	Filter     domain.TaskFilter `json:"filter"`
-	Settings   map[string]string `json:"settings"`
+	Settings   map[string]any    `json:"settings"`
 }
 
 // List handles GET /tasks
@@ -214,17 +213,15 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 		Filter:     req.Filter,
 		Settings:   req.Settings,
 	}
-	filterJSON, _ := json.Marshal(req.Filter)
-	settingsJSON, _ := json.Marshal(req.Settings)
 
 	task := &domain.Task{
-		Status:       domain.TaskStatusQueued,
-		RootFolder:   normalizedRoot,
-		BranchID:     req.BranchID,
-		GateID:       req.GateID,
-		StationID:    req.StationID,
-		FilterJSON:   string(filterJSON),
-		SettingsJSON: string(settingsJSON),
+		Status:     domain.TaskStatusQueued,
+		RootFolder: normalizedRoot,
+		BranchID:   req.BranchID,
+		GateID:     req.GateID,
+		StationID:  req.StationID,
+		Filters:    &req.Filter,
+		Settings:   req.Settings,
 	}
 
 	if err := h.taskRepo.Create(c.Context(), task); err != nil {

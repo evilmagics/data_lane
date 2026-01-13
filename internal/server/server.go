@@ -93,6 +93,15 @@ func (s *Server) SetupRoutes() {
 	protected.Delete("/tasks/:id", taskHandler.Cancel)
 	protected.Get("/tasks/:id/download", taskHandler.Download)
 
+	// Transaction Statuses (Public - for dropdown options)
+	protected.Get("/transaction-statuses", func(c fiber.Ctx) error {
+		statuses := []string{"PERIODIK", "BUKA ALB"}
+		return c.JSON(fiber.Map{
+			"success": true,
+			"data":    fiber.Map{"statuses": statuses},
+		})
+	})
+
 	// Schedules (Shared)
 	hmacProtected.Post("/schedules", scheduleHandler.Create)
 	protected.Get("/schedules", scheduleHandler.List)

@@ -53,34 +53,34 @@ func GeneratePDFWithProgress(ctx context.Context, metadata domain.TaskMetadata, 
 
 	// Load settings
 	branchName := getSettingOrDefault(ctx, settingsRepo, domain.SettingBranchName, strconv.Itoa(metadata.BranchID))
-	if name, ok := metadata.Settings["branch_name"]; ok && name != "" {
+	if name, ok := metadata.Settings["branch_name"].(string); ok && name != "" {
 		branchName = name
 	}
 
 	company := getSettingOrDefault(ctx, settingsRepo, domain.SettingManagementCompany, "PT JASA MARGA TBK")
-	if c, ok := metadata.Settings["management_company"]; ok && c != "" {
+	if c, ok := metadata.Settings["management_company"].(string); ok && c != "" {
 		company = c
 	}
 
 	pageSize := getSettingOrDefault(ctx, settingsRepo, domain.SettingPageSize, "A4")
-	if ps, ok := metadata.Settings["page_size"]; ok && ps != "" {
+	if ps, ok := metadata.Settings["page_size"].(string); ok && ps != "" {
 		pageSize = ps
 	}
 
 	filenameFormat := getSettingOrDefault(ctx, settingsRepo, domain.SettingOutputFilenameFormat, "{branch_id}_{date}")
-	if ff, ok := metadata.Settings["output_filename_format"]; ok && ff != "" {
+	if ff, ok := metadata.Settings["output_filename_format"].(string); ok && ff != "" {
 		filenameFormat = ff
 	}
 
 	// Get day start time for daily transaction window
 	dayStartTime := getSettingOrDefault(ctx, settingsRepo, domain.SettingTimeOverlap, "00:00")
-	if dst, ok := metadata.Settings["day_start_time"]; ok && dst != "" {
+	if dst, ok := metadata.Settings["day_start_time"].(string); ok && dst != "" {
 		dayStartTime = dst
 	}
 
 	// Get analyzer operator name for PDF header
 	analyzerOperatorName := getSettingOrDefault(ctx, settingsRepo, domain.SettingAnalyzerOperatorName, "Analyzer Operator")
-	if aon, ok := metadata.Settings["analyzer_operator_name"]; ok && aon != "" {
+	if aon, ok := metadata.Settings["analyzer_operator_name"].(string); ok && aon != "" {
 		analyzerOperatorName = aon
 	}
 
