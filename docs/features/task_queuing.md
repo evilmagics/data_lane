@@ -7,9 +7,13 @@ The PDF Generator uses a persistent task queue to handle PDF generation jobs asy
 1.  **Request**: Client sends a POST request to `/api/queue` with task metadata.
 2.  **Persistence**: The task is immediately stored in the primary `sqlite` database with status `queued`. Key fields are extracted for efficient querying:
     *   `root_folder`: Source data root path
-    *   `gate_id`: Target gate ID
+    *   `branch_id`: Source branch ID
+    *   `gate_id`: Target gate ID (Used for path lookup, set to -1 for "All" filtering)
     *   `station_id`: Target station ID
-    *   `filter_json`: JSON serialized filter configuration
+    *   `filter_json`: JSON serialized filter configuration, now including:
+        *   `gate_id`: Filter for `GB` column in datasource (if not "All")
+        *   `origin_gate_ids`: Multi-select filter for `AG` column in datasource
+        *   `transaction_status`: Filter for `STATUS` column
 3.  **Enqueue**: The task ID and metadata are pushed to the `backlite` queue (backed by `sqlite`).
 4.  **Worker**: A background worker (running in the same process) picks up the task.
 5.  **Processing**:
@@ -59,7 +63,9 @@ The PDF Generator uses a persistent task queue to handle PDF generation jobs asy
 *   **SSE**: Real-time updates are pushed to the `/sse/tasks/:id` stream when task status or progress changes.
 *   **Queue Page**:
     *   Displays tasks in a table with **ID (Detail Button)**, **Station Info (Branch/Gate/Station)**, **Status**, and **Created At**.
+    *   **New Task Modal**:
+        *   **Gate ID**: Supports specific selection or "All" (-1).
+        *   **Advanced Filters**: Includes **Origin Gate ID** multi-selection and **Transaction Status** filtering.
     *   **Detail Modal**: Shows full task info including `Filters Used` and `Settings Used` in expanded sections.
     *   **Downloads**: Completed tasks can be downloaded with a confirmation step.
     *   **Time Format**: Displayed as `dd/MM/yyyy HH:mm:ss`.
-

@@ -165,8 +165,8 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 	if req.BranchID < 0 || req.BranchID > 100 {
 		return api.Error(c, api.CodeValidationError, "Branch ID must be between 0 and 100")
 	}
-	if req.GateID < 0 || req.GateID > 100 {
-		return api.Error(c, api.CodeValidationError, "Gate ID must be between 0 and 100")
+	if req.GateID < -1 || req.GateID > 100 {
+		return api.Error(c, api.CodeValidationError, "Gate ID must be between -1 and 100")
 	}
 	if req.StationID < 0 || req.StationID > 100 {
 		return api.Error(c, api.CodeValidationError, "Station ID must be between 0 and 100")
@@ -202,6 +202,11 @@ func (h *TaskHandler) Enqueue(c fiber.Ctx) error {
 		log.Info().Str("path", dbPath).Msg("Datasource file not found while adding new task")
 	} else {
 		log.Info().Str("path", dbPath).Msg("Datasource file found while adding new task")
+	}
+
+	// If GateID is not -1 (All), set it in the filter as well
+	if req.GateID != -1 {
+		req.Filter.GateID = &req.GateID
 	}
 
 	// Create task metadata for queue

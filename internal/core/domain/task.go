@@ -128,5 +128,7 @@ type TaskFilter struct {
 	RangeStart        string `json:"range_start,omitempty"`         // Range start datetime
 	RangeEnd          string `json:"range_end,omitempty"`           // Range end datetime
 	TransactionStatus string `json:"transaction_status,omitempty"`  // Filter by status
+	GateID            *int   `json:"gate_id,omitempty"`             // Filter by gate ID (pointer to distinguish from 0/nil)
+	OriginGateIDs     []int  `json:"origin_gate_ids,omitempty"`     // Filter by origin gate IDs
 	Limit             int    `json:"limit,omitempty"`               // Max transactions to fetch, 0 = unlimited
 }

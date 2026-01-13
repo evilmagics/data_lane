@@ -102,55 +102,9 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 	defer db.Close()
 
 	// Build query with filters
-	// Use TOP clause only if limit is specified
-	var query string
-	if filter.Limit > 0 {
-		query = fmt.Sprintf(`SELECT TOP %d [ID], [CB], [GB], [GD], [SHIFT], [PERIODA], [IDPUL], [IDPAS], [WAKTU], [GOL], [AVC], [METODA], [SERI], [STATUS], [AG], [NOKARTU], [IMAGE1], [IMAGE2] FROM CAPTURE WHERE 1=1`, filter.Limit)
-	} else {
-		query = `SELECT [ID], [CB], [GB], [GD], [SHIFT], [PERIODA], [IDPUL], [IDPAS], [WAKTU], [GOL], [AVC], [METODA], [SERI], [STATUS], [AG], [NOKARTU], [IMAGE1], [IMAGE2] FROM CAPTURE WHERE 1=1`
-	}
-	var args []interface{}
+	query, args := buildQuery(filter)
 
-	if filter.Date != "" {
-		// Daily mode: use DayStartTime to calculate transaction window
-		// If DayStartTime is set (e.g., "02:00"), transactions from date+02:00 to nextDay+01:59:59
-		dayStartTime := filter.DayStartTime
-		if dayStartTime == "" {
-			dayStartTime = "00:00"
-		}
-
-		// Parse the date and day start time
-		startDateTime := filter.Date + " " + dayStartTime + ":00"
-
-		// Calculate end time (next day at startTime - 1 second)
-		parsedDate, err := time.Parse("2006-01-02", filter.Date)
-		if err == nil {
-			nextDay := parsedDate.AddDate(0, 0, 1)
-			endDateTime := nextDay.Format("2006-01-02") + " " + dayStartTime + ":00"
-
-			// Parse start and end times, then subtract 1 second from end
-			startTime, _ := time.Parse("2006-01-02 15:04:05", startDateTime)
-			endTime, _ := time.Parse("2006-01-02 15:04:05", endDateTime)
-			endTime = endTime.Add(-time.Second)
-
-			query += " AND [WAKTU] >= ? AND [WAKTU] <= ?"
-			args = append(args, startTime.Format("2006-01-02 15:04:05"), endTime.Format("2006-01-02 15:04:05"))
-
-			log.Debug().
-				Str("date", filter.Date).
-				Str("day_start_time", dayStartTime).
-				Str("window_start", startTime.Format("2006-01-02 15:04:05")).
-				Str("window_end", endTime.Format("2006-01-02 15:04:05")).
-				Msg("Daily transaction window calculated")
-		} else {
-			// Fallback to simple date match if parsing fails
-			query += " AND FORMAT([WAKTU], 'yyyy-MM-dd') = ?"
-			args = append(args, filter.Date)
-		}
-	} else if filter.RangeStart != "" && filter.RangeEnd != "" {
-		query += " AND [WAKTU] BETWEEN ? AND ?"
-		args = append(args, filter.RangeStart, filter.RangeEnd)
-	}
+	log.Debug().Str("query", query).Msg("Executing query")
 
 	query += " ORDER BY [ID]"
 
@@ -202,6 +156,70 @@ func LoadTransactions(ctx context.Context, dbPath string, filter domain.TaskFilt
 
 	log.Debug().Int("count", len(transactions)).Msg("Loaded transactions")
 	return transactions, nil
+}
+
+// buildQuery constructs the SQL query for loading transactions
+func buildQuery(filter domain.TaskFilter) (string, []interface{}) {
+	var query string
+	if filter.Limit > 0 {
+		query = fmt.Sprintf(`SELECT TOP %d [ID], [CB], [GB], [GD], [SHIFT], [PERIODA], [IDPUL], [IDPAS], [WAKTU], [GOL], [AVC], [METODA], [SERI], [STATUS], [AG], [NOKARTU], [IMAGE1], [IMAGE2] FROM CAPTURE WHERE 1=1`, filter.Limit)
+	} else {
+		query = `SELECT [ID], [CB], [GB], [GD], [SHIFT], [PERIODA], [IDPUL], [IDPAS], [WAKTU], [GOL], [AVC], [METODA], [SERI], [STATUS], [AG], [NOKARTU], [IMAGE1], [IMAGE2] FROM CAPTURE WHERE 1=1`
+	}
+	var args []interface{}
+
+	if filter.Date != "" {
+		dayStartTime := filter.DayStartTime
+		if dayStartTime == "" {
+			dayStartTime = "00:00"
+		}
+
+		startDateTime := filter.Date + " " + dayStartTime + ":00"
+
+		parsedDate, err := time.Parse("2006-01-02", filter.Date)
+		if err == nil {
+			nextDay := parsedDate.AddDate(0, 0, 1)
+			endDateTime := nextDay.Format("2006-01-02") + " " + dayStartTime + ":00"
+
+			startTime, _ := time.Parse("2006-01-02 15:04:05", startDateTime)
+			endTime, _ := time.Parse("2006-01-02 15:04:05", endDateTime)
+			endTime = endTime.Add(-time.Second)
+
+			query += " AND [WAKTU] >= ? AND [WAKTU] <= ?"
+			args = append(args, startTime.Format("2006-01-02 15:04:05"), endTime.Format("2006-01-02 15:04:05"))
+		} else {
+			query += " AND FORMAT([WAKTU], 'yyyy-MM-dd') = ?"
+			args = append(args, filter.Date)
+		}
+	} else if filter.RangeStart != "" && filter.RangeEnd != "" {
+		query += " AND [WAKTU] BETWEEN ? AND ?"
+		args = append(args, filter.RangeStart, filter.RangeEnd)
+	}
+
+	if filter.GateID != nil {
+		query += " AND [GB] = ?"
+		args = append(args, *filter.GateID)
+	}
+
+	if len(filter.OriginGateIDs) > 0 {
+		placeholders := ""
+		for i, id := range filter.OriginGateIDs {
+			if i > 0 {
+				placeholders += ","
+			}
+			placeholders += "?"
+			args = append(args, id)
+		}
+		query += fmt.Sprintf(" AND [AG] IN (%s)", placeholders)
+	}
+
+	if filter.TransactionStatus != "" && filter.TransactionStatus != "All" {
+		query += " AND [STATUS] = ?"
+		args = append(args, filter.TransactionStatus)
+	}
+
+	query += " ORDER BY [ID]"
+	return query, args
 }
 
 // GetStation returns the station name or "--" if empty
