@@ -4,9 +4,10 @@ The Schedules Page allows managing cron-based task schedules.
 
 ## Features
 - **Scrollable Create Schedule Modal**: The "Create Schedule" dialog utilizes a `ScrollArea` component.
+- **Advanced Filters**: "Create Schedule" supports advanced filtering by `Origin Gate ID`, `Transaction Status`, `Limit`, and `Day Start Time` via an accordion.
 - **Table Filters**:
     - **Gate ID**: Filter schedules by Target Gate ID.
     - **Station ID**: Filter schedules by Target Station ID.
-    - **Date Filter**: Text search within the "Date Filter" column (filters by the description of the task's date logic).
+    - **Transaction Date**: Text search within the "Transaction Date" column (filters by date, range, or "yesterday").
     - **Status**: Filter by Active/Paused.
-- **Date Filter Column**: Displays the task's date filter logic (e.g. "Yesterday").
+- **Transaction Date Column**: Displays the task's date filter logic (e.g. "Yesterday", "{date}", or "{start} - {end}").
